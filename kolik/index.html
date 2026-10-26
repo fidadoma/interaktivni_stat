@@ -1,0 +1,258 @@
+<!doctype html><html lang="cs"><head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Kolik to stojí?</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: projector-first analysis page; tabs for results / products / form guide; chart left, model panel right */
+:root{
+  --bg:#f6f7f9; --panel:#fff; --ink:#18212b; --muted:#5b6773; --line:#d9dee4; --soft:#eaf0f7;
+  --brand:#b4441b; --priv:#1f5fa8; --fit:#18212b; --diag:#9aa6b2; --warn:#b4441b;
+  --display:"Bricolage Grotesque",ui-sans-serif,system-ui,sans-serif;
+  --body:"Instrument Sans",ui-sans-serif,system-ui,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#12171d; --panel:#1a2129; --ink:#e6ebf0; --muted:#9aa6b2; --line:#2e3843; --soft:#1f2a36;
+  --brand:#f0955f; --priv:#6aa7ec; --fit:#e6ebf0; --diag:#5b6773; --warn:#f0955f; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#12171d; --panel:#1a2129; --ink:#e6ebf0; --muted:#9aa6b2; --line:#2e3843; --soft:#1f2a36;
+  --brand:#f0955f; --priv:#6aa7ec; --fit:#e6ebf0; --diag:#5b6773; --warn:#f0955f; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.55;padding-inline:16px;padding-block:24px 48px}
+.wrap{max-width:1100px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
+h1{font-family:var(--display);font-size:clamp(28px,4.5vw,42px);line-height:1.05;margin:0}
+header p{margin:6px 0 0;color:var(--muted);max-width:72ch}
+h2{font-family:var(--display);font-size:21px;margin:0}
+h3{font-size:15px;margin:0;font-weight:600}
+nav{display:flex;flex-wrap:wrap;gap:6px;border-bottom:1px solid var(--line)}
+nav button{font:500 14px var(--body);color:var(--muted);background:none;border:none;border-bottom:2px solid transparent;padding:8px 12px;cursor:pointer;margin-bottom:-1px}
+nav button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--brand)}
+button:focus-visible,input:focus-visible,textarea:focus-visible,summary:focus-visible{outline:2px solid var(--priv);outline-offset:2px}
+section{display:flex;flex-direction:column;gap:16px}
+.lab{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:860px){.lab{grid-template-columns:1fr}}
+.box{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:12px 14px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.plot{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:8px;min-width:0}
+.plot svg{width:100%;height:auto;display:block}
+.legend{display:flex;flex-wrap:wrap;gap:14px;font-size:13px;color:var(--muted);padding:4px 6px 0}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px;vertical-align:-1px}
+.legend i.ln{width:18px;height:2px;border-radius:0;vertical-align:middle}
+.side{display:flex;flex-direction:column;gap:14px;min-width:0}
+.chk{display:flex;gap:8px;align-items:center;font-size:14px;cursor:pointer}
+.stats{display:grid;grid-template-columns:1fr auto;gap:4px 12px;font-size:14px}
+.stats span:nth-child(even){font-family:var(--mono);font-variant-numeric:tabular-nums;text-align:right}
+.interp{margin:0;padding-left:18px;font-size:14px;display:flex;flex-direction:column;gap:5px}
+.banner{background:var(--soft);border:1px solid var(--line);border-radius:6px;padding:10px 14px;font-size:14px;display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
+.banner b{font-weight:600}
+.btns{display:flex;flex-wrap:wrap;gap:8px}
+button.b,label.b{position:relative;font:500 13.5px var(--body);background:var(--soft);color:var(--ink);border:1px solid var(--line);border-radius:4px;padding:7px 12px;cursor:pointer}
+button.b.primary{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+button.b:hover,label.b:hover{border-color:var(--priv)}
+textarea{width:100%;min-height:150px;font:12.5px var(--mono);padding:10px;border:1px solid var(--line);border-radius:4px;background:var(--panel);color:var(--ink);resize:vertical}
+.tablewrap{overflow-x:auto}
+table{border-collapse:collapse;font-size:13.5px;width:100%}
+th,td{padding:6px 8px;border-bottom:1px solid var(--line);text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+th{font-weight:600;color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.05em}
+th:nth-child(2),td:nth-child(2){text-align:left;white-space:normal;min-width:180px}
+td{font-family:var(--mono);font-size:13px}
+td.t{font-family:var(--body);font-size:14px}
+.pill{display:inline-block;font:500 11.5px var(--body);padding:1px 7px;border-radius:10px;border:1px solid currentColor}
+.pill.br{color:var(--brand)}.pill.pr{color:var(--priv)}
+.neg{color:var(--priv)}.pos{color:var(--brand)}
+input.cell{font:13px var(--mono);width:100%;min-width:60px;padding:4px 6px;border:1px solid var(--line);border-radius:3px;background:var(--panel);color:var(--ink);text-align:right}
+input.cell.txt{font-family:var(--body);text-align:left;min-width:200px}
+.tip{font-size:13.5px;color:var(--muted);margin:0}
+.msg{font-size:13.5px;color:var(--warn);margin:0}
+ol.steps{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:8px;max-width:78ch}
+a{color:var(--priv)}
+code{font-family:var(--mono);font-size:12.5px;background:var(--soft);padding:1px 4px;border-radius:3px}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:12px 14px;display:flex;flex-direction:column;gap:2px}
+.card .n{font-family:var(--display);font-weight:700;font-size:28px;line-height:1}
+.card .nm{font-weight:600}
+.card .sz{color:var(--muted);font-size:13.5px}
+.axis text{font:11px var(--mono);fill:var(--muted)}
+.axis line{stroke:var(--line)}
+.alab{font:12px var(--body);fill:var(--muted)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="wrap">
+<header>
+  <h1>Kolik to stojí?</h1>
+  <p>Studenti odhadnou ceny 12 produktů z Rohlik.cz. Regrese ukáže, jak odhady souvisí se skutečnou cenou a jestli se zboží známých značek odhaduje jinak než levné a méně známé značky.</p>
+</header>
+
+<nav role="tablist">
+  <button role="tab" aria-selected="true" data-tab="pv">Vyhodnocení</button>
+  <button role="tab" aria-selected="false" data-tab="pd">Načíst odpovědi</button>
+  <button role="tab" aria-selected="false" data-tab="pp">Produkty a ceny</button>
+</nav>
+
+<!-- RESULTS -->
+<section id="pv">
+  <div class="banner" id="srcBanner"></div>
+  <div class="lab">
+    <div class="plot"><svg id="chart" viewBox="0 0 660 440" role="img" aria-label="Odhadovaná proti skutečné ceně"></svg>
+      <div class="legend"><span><i style="background:var(--brand)"></i>známá značka</span><span><i style="background:var(--priv)"></i>levná / méně známá značka</span><span><i class="ln" style="background:var(--diag)"></i>přesný odhad (odhad = cena)</span><span><i class="ln" style="background:var(--fit)"></i>regresní přímka</span></div>
+    </div>
+    <div class="side">
+      <div class="box">
+        <label class="chk"><input type="checkbox" id="optLog"> Logaritmické osy (log odhad ~ log cena)</label>
+        <label class="chk"><input type="checkbox" id="optDummy" checked> Přidat dummy „známá značka“</label>
+        <label class="chk"><input type="checkbox" id="optMeans"> Ukázat jen průměry produktů</label>
+        <label class="chk"><input type="checkbox" id="optTrim" checked> Vyřadit nesmyslné odhady (více než 10× mimo)</label>
+      </div>
+      <div class="box">
+        <h3 id="mTitle">Model</h3>
+        <div class="stats" id="mStats"></div>
+        <ul class="interp" id="mInterp"></ul>
+      </div>
+    </div>
+  </div>
+  <div class="box">
+    <h3>Produkty seřazené podle chyby odhadu</h3>
+    <div class="tablewrap"><table id="tProd"></table></div>
+    <p class="tip">Chyba = medián odhadu oproti skutečné ceně. Medián je odolnější vůči jednomu „1000 Kč za colu“.</p>
+  </div>
+</section>
+
+<!-- PASTE -->
+<section id="pd" hidden>
+  <div class="box">
+    <h2>Načíst odpovědi</h2>
+    <p class="tip">Nahrajte CSV export z formr (Run → Export results → CSV), nebo obsah souboru vložte do pole níže. Sloupce <code>produkt_1</code> až <code>produkt_12</code> se najdou samy, ostatní sloupce (session, created…) se ignorují. Funguje i tabulka zkopírovaná z Excelu nebo Google Tabulek.</p>
+    <label class="b" style="align-self:flex-start;cursor:pointer" for="file">Nahrát CSV soubor<input type="file" id="file" accept=".csv,.tsv,.txt,text/csv" style="position:absolute;width:1px;height:1px;opacity:0"></label>
+    <textarea id="paste" placeholder="&quot;session&quot;,&quot;session_id&quot;,…,&quot;produkt_1&quot;,&quot;produkt_2&quot;,…"></textarea>
+    <div class="btns"><button class="b primary" id="btnUse">Použít vložená data</button><button class="b" id="btnSample">Zpět na ukázková data</button></div>
+    <p class="msg" id="pasteMsg"></p>
+  </div>
+</section>
+
+<!-- PRODUCTS -->
+<section id="pp" hidden>
+  <div class="box">
+    <h2>Produkty a skutečné ceny</h2>
+    <p class="tip">Běžné ceny z Rohlik.cz k 12. 10. 2026 (oblast doručení Praha). U zlevněných produktů je uvedena cena před slevou, akční cena je v poznámce. Ceny se mění, před přednáškou je můžete přepsat. Změny se uloží v tomto prohlížeči.</p>
+    <div class="tablewrap"><table id="tEdit"></table></div>
+    <div class="btns"><button class="b" id="btnReset">Obnovit výchozí seznam</button></div>
+  </div>
+  <div class="box">
+    <h3>Karty na promítání</h3>
+    <p class="tip">Pořadí je záměrně promíchané, aby kategorie nebyly vedle sebe. Fotky stáhnete z odkazů v tabulce výše (otevřít obrázek → uložit) a dáte do slidu k číslu.</p>
+    <div class="cards" id="cards"></div>
+  </div>
+</section>
+
+</div>
+
+<script>
+const DEFAULT=[
+ {n:1, name:'Coca-Cola Zero', size:'2 l', price:49.9, brand:1, ok:1, url:'https://www.rohlik.cz/1437487', img:'https://cdn.rohlik.cz/images/grocery/products/1437487/1437487-1785353188323290646.png', note:'akce 42,90'},
+ {n:2, name:'Ubomi Intense mletá káva', size:'250 g', price:84.9, brand:0, ok:1, url:'https://www.rohlik.cz/1426038', img:'https://cdn.rohlik.cz/images/grocery/products/1426038/1426038-1665172848296.jpg', note:''},
+ {n:3, name:'Persil Universal prací gel', size:'1,98 l (44 praní)', price:349.9, brand:1, ok:1, url:'https://www.rohlik.cz/1338217', img:'https://cdn.rohlik.cz/images/grocery/products/1338217/1338217-1787303358839987152.jpg', note:'akce 299,90'},
+ {n:4, name:'Carla Kocourek Mikeš mléčná čokoláda', size:'20 g', price:15.9, brand:0, ok:1, url:'https://www.rohlik.cz/1456131', img:'https://cdn.rohlik.cz/images/grocery/products/1456131/1456131-1706171611063.jpg', note:''},
+ {n:5, name:'Nutella', size:'200 g', price:104.9, brand:1, ok:1, url:'https://www.rohlik.cz/719845', img:'https://cdn.rohlik.cz/images/grocery/products/719845/719845-1606822443.jpg', note:''},
+ {n:6, name:'ISANA šampon proti lupům', size:'300 ml', price:29.9, brand:0, ok:1, url:'https://www.rohlik.cz/1448098', img:'https://cdn.rohlik.cz/images/grocery/products/1448098/1448098-1700590220856.jpg', note:''},
+ {n:7, name:'Jacobs Aroma Standard mletá káva', size:'250 g', price:149.9, brand:1, ok:1, url:'https://www.rohlik.cz/1310023', img:'https://cdn.rohlik.cz/images/grocery/products/1310023/1310023-1741000309541.jpg', note:'akce 139,90'},
+ {n:8, name:'ZON Plus Cola', size:'2 l', price:16.9, brand:0, ok:1, url:'https://www.rohlik.cz/1304243', img:'https://cdn.rohlik.cz/images/grocery/products/1304243/1304243-1738773414664.jpg', note:'akce 14,90'},
+ {n:9, name:'Head & Shoulders Classic Clean šampon', size:'800 ml', price:359.9, brand:1, ok:1, url:'https://www.rohlik.cz/1376225', img:'https://cdn.rohlik.cz/images/grocery/products/1376225/1376225-1675034147984.jpg', note:'akce 299,90'},
+ {n:10, name:'Enzo Deluxe Universal prací gel 2v1', size:'4 l (100 praní)', price:169.9, brand:0, ok:1, url:'https://www.rohlik.cz/1472331', img:'https://cdn.rohlik.cz/images/grocery/products/1472331/1472331-1749491249635.jpg', note:''},
+ {n:11, name:'Milka mléčná čokoláda z alpského mléka', size:'90 g', price:49.9, brand:1, ok:1, url:'https://www.rohlik.cz/719595', img:'https://cdn.rohlik.cz/images/grocery/products/719595/719595-1744287035053.jpg', note:''},
+ {n:12, name:'Laguna univerzální prací gel', size:'1,5 l (42 praní)', price:99.9, brand:0, ok:1, url:'https://www.rohlik.cz/1335595', img:'https://cdn.rohlik.cz/images/grocery/products/1335595/1335595-1654258599596.jpg', note:''}];
+const LS='kolikstoji.v2';
+function load(k,d){try{const v=localStorage.getItem(LS+k);return v?JSON.parse(v):d}catch(e){return d}}
+function save(k,v){try{localStorage.setItem(LS+k,JSON.stringify(v))}catch(e){}}
+let P=load('prod',DEFAULT.map(p=>({...p})));
+let RAW=null; // array of {pid: value} per respondent, null = sample
+const nf=(x,d=2)=>(x<0?'−':'')+Math.abs(x).toLocaleString('cs-CZ',{minimumFractionDigits:d,maximumFractionDigits:d});
+const kc=x=>Math.round(x).toLocaleString('cs-CZ')+' Kč';
+
+/* sample data: slope < 1 on log scale, mild brand premium */
+function sample(){let a=7;const u=()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296};
+  const z=()=>Math.sqrt(-2*Math.log(u()+1e-12))*Math.cos(2*Math.PI*u());const out=[];
+  for(let s=0;s<34;s++){const bias=z()*0.18,r={};P.forEach(p=>{let e=Math.exp(0.95+0.78*Math.log(p.price)+0.12*p.brand+bias+z()*0.33);e=e<50?Math.round(e):Math.round(e/5)*5;r[p.n]=e;});out.push(r);}
+  out[3][8]=1000; return out;}
+
+function solve(A,b){const n=b.length,M=A.map((r,i)=>[...r,b[i]]);for(let c=0;c<n;c++){let p=c;for(let r=c+1;r<n;r++)if(Math.abs(M[r][c])>Math.abs(M[p][c]))p=r;[M[c],M[p]]=[M[p],M[c]];if(Math.abs(M[c][c])<1e-12)return null;for(let r=0;r<n;r++){if(r===c)continue;const f=M[r][c]/M[c][c];for(let k=c;k<=n;k++)M[r][k]-=f*M[c][k];}}return M.map((r,i)=>r[n]/r[i]);}
+function ols(X,y){const k=X[0].length,A=Array.from({length:k},()=>Array(k).fill(0)),b=Array(k).fill(0);X.forEach((x,i)=>{for(let a=0;a<k;a++){b[a]+=x[a]*y[i];for(let c=0;c<k;c++)A[a][c]+=x[a]*x[c];}});
+  const beta=solve(A,b);if(!beta)return null;const my=y.reduce((s,v)=>s+v,0)/y.length;let sse=0,sst=0;X.forEach((x,i)=>{const f=x.reduce((s,v,j)=>s+v*beta[j],0);sse+=(y[i]-f)**2;sst+=(y[i]-my)**2;});return{beta,r2:1-sse/sst,n:y.length};}
+const median=a=>{const s=[...a].sort((x,y)=>x-y),m=s.length>>1;return s.length%2?s[m]:(s[m-1]+s[m])/2};
+
+/* ---------- parsing pasted responses ---------- */
+function num(s){if(s==null)return NaN;s=String(s).replace(/kč/ig,'').replace(/\s| /g,'');if(/^\d{1,3}(\.\d{3})+(,\d+)?$/.test(s))s=s.replace(/\./g,'');s=s.replace(',','.');return parseFloat(s);}
+function parse(txt){const lines=txt.replace(/^\ufeff/,'').replace(/\r/g,'').split('\n').filter(l=>l.trim());if(lines.length<2)throw'Vložte hlavičku a alespoň jeden řádek odpovědí.';
+  const h=lines[0];const sep=h.includes('\t')?'\t':h.split(';').length>h.split(',').length?';':',';
+  const split=l=>l.split(sep).map(c=>c.replace(/^"|"$/g,'').trim());const head=split(h);const map={};
+  head.forEach((c,i)=>{const m=c.match(/(\d{1,2})\s*$/)||c.match(/produkt\s*(\d{1,2})/i);if(m){const n=+m[1];if(P.some(p=>p.n===n)&&!(n in map))map[n]=i;}});
+  if(!Object.keys(map).length)throw'V hlavičce jsem nenašel sloupce „Produkt 1“ až „Produkt 12“.';
+  const all=lines.slice(1).map(l=>{const c=split(l),r={};for(const n in map){const v=num(c[map[n]]);if(isFinite(v)&&v>0)r[n]=v;}return r;});
+  const rows=all.filter(r=>Object.keys(r).length);
+  if(!rows.length)throw'Nenašel jsem žádné číselné odpovědi.';return{rows,cols:Object.keys(map).length,empty:all.length-rows.length,partial:rows.filter(r=>Object.keys(r).length<Object.keys(map).length).length};}
+
+/* ---------- chart ---------- */
+const NS='http://www.w3.org/2000/svg';
+function el(t,a,p){const e=document.createElementNS(NS,t);for(const k in a)e.setAttribute(k,a[k]);if(p)p.appendChild(e);return e;}
+function draw(obs,means,fit,useLog,useDummy){const svg=document.getElementById('chart');svg.innerHTML='';const W=660,H=440,M={l:62,r:18,t:16,b:46};
+  const vals=obs.map(o=>o.y).concat(obs.map(o=>o.x));let lo=Math.min(...vals),hi=Math.max(...vals);
+  let T,f;if(useLog){lo=Math.max(1,lo*0.8);hi=hi*1.25;f=v=>Math.log10(v);T=[5,10,20,50,100,200,500,1000,2000,5000].filter(t=>t>=lo&&t<=hi);}else{lo=0;hi=hi*1.05;f=v=>v;const st=hi>1500?500:hi>600?200:hi>250?100:50;T=[];for(let t=0;t<=hi;t+=st)T.push(t);}
+  const flo=f(lo),fhi=f(hi),sx=v=>M.l+(f(v)-flo)/(fhi-flo)*(W-M.l-M.r),sy=v=>H-M.b-(f(v)-flo)/(fhi-flo)*(H-M.t-M.b);
+  const g=el('g',{class:'axis'},svg);T.forEach(t=>{el('line',{x1:M.l,x2:W-M.r,y1:sy(t),y2:sy(t),opacity:.6},g);const a=el('text',{x:M.l-6,y:sy(t)+4,'text-anchor':'end'},g);a.textContent=t.toLocaleString('cs-CZ');
+    el('line',{x1:sx(t),x2:sx(t),y1:H-M.b,y2:H-M.b+5},g);const b=el('text',{x:sx(t),y:H-M.b+18,'text-anchor':'middle'},g);b.textContent=t.toLocaleString('cs-CZ');});
+  const xl=el('text',{x:(M.l+W-M.r)/2,y:H-6,'text-anchor':'middle',class:'alab'},svg);xl.textContent='skutečná cena (Kč)'+(useLog?', log. osa':'');
+  const yl=el('text',{x:14,y:(M.t+H-M.b)/2,'text-anchor':'middle',class:'alab',transform:`rotate(-90 14 ${(M.t+H-M.b)/2})`},svg);yl.textContent='odhad (Kč)';
+  const d=el('defs',{},svg),cp=el('clipPath',{id:'cl'},d);el('rect',{x:M.l,y:M.t,width:W-M.l-M.r,height:H-M.t-M.b},cp);const pl=el('g',{'clip-path':'url(#cl)'},svg);
+  el('line',{x1:sx(lo),y1:sy(lo),x2:sx(hi),y2:sy(hi),style:'stroke:var(--diag);stroke-width:1.5;stroke-dasharray:6 5'},pl);
+  const line=(b0,b1,col,w)=>{let p='';for(let i=0;i<=60;i++){const x=Math.exp(Math.log(lo)+(Math.log(hi)-Math.log(lo))*i/60)||lo+(hi-lo)*i/60;const xv=useLog?x:lo+(hi-lo)*i/60;const yv=useLog?Math.exp(b0+b1*Math.log(xv)):b0+b1*xv;if(!(yv>0)&&useLog)continue;p+=(p?'L':'M')+sx(xv).toFixed(1)+' '+sy(Math.max(useLog?lo:lo,Math.min(hi*2,yv))).toFixed(1);}el('path',{d:p,style:`fill:none;stroke:${col};stroke-width:${w}`},pl);};
+  if(fit){const b=fit.beta;if(useDummy){line(b[0],b[1],'var(--priv)',2.4);line(b[0]+b[2],b[1],'var(--brand)',2.4);}else line(b[0],b[1],'var(--fit)',2.4);}
+  if(!optMeans.checked)obs.forEach(o=>el('circle',{cx:sx(o.x)+(o.j||0),cy:sy(o.y),r:3.2,style:`fill:${o.b?'var(--brand)':'var(--priv)'};fill-opacity:.35`},pl));
+  means.forEach(m=>{el('circle',{cx:sx(m.x),cy:sy(m.y),r:7,style:`fill:${m.b?'var(--brand)':'var(--priv)'};stroke:var(--panel);stroke-width:2`},pl);
+    const t=el('text',{x:sx(m.x)+10,y:sy(m.y)+4,style:'font:600 12px var(--body);fill:var(--ink)'},pl);t.textContent=m.n;});}
+
+/* ---------- analysis ---------- */
+function render(){const data=RAW||sample();const useLog=optLog.checked,useD=optDummy.checked;
+  srcBanner.innerHTML=RAW?`<span><b>Data ze třídy:</b> ${data.length} ${data.length===1?'respondent':data.length<5?'respondenti':'respondentů'}.</span><button class="b" onclick="RAW=null;render()">Přepnout na ukázková data</button>`
+    :`<span><b>Ukázková data</b> (34 simulovaných studentů). Po hlasování načtěte export z formr.</span><button class="b" onclick="show('pd')">Načíst odpovědi</button>`;
+  const obs=[];let dropped=0;data.forEach(r=>P.forEach(p=>{const v=r[p.n];if(!(v>0))return;if(optTrim.checked&&(v>p.price*10||v<p.price/10)){dropped++;return;}obs.push({x:p.price,y:v,b:p.brand,n:p.n,j:(Math.random()-.5)*6});}));
+  if(obs.length<4){chart.innerHTML='';tProd.innerHTML='';mTitle.textContent='Málo dat pro model';mStats.innerHTML='';
+    mInterp.innerHTML=`<li>Použitelných odhadů: ${obs.length}${dropped?`, vyřazeno jako nesmyslné: ${dropped}`:''}.</li>`+(dropped&&optTrim.checked?'<li>Vypněte „Vyřadit nesmyslné odhady“, pokud chcete vidět i je (např. při testovacím vyplnění).</li>':'');return;}
+  const tx=v=>useLog?Math.log(v):v;const X=obs.map(o=>useD?[1,tx(o.x),o.b]:[1,tx(o.x)]),Y=obs.map(o=>tx(o.y));const fit=ols(X,Y);
+  const means=P.map(p=>{const v=obs.filter(o=>o.n===p.n).map(o=>o.y);return v.length?{n:p.n,x:p.price,y:median(v),mean:v.reduce((s,x)=>s+x,0)/v.length,k:v.length,b:p.brand,p}:null}).filter(Boolean);
+  draw(obs,means,fit,useLog,useD);
+  const b=fit.beta;mTitle.textContent=useLog?(useD?'log(odhad) = b0 + b1·log(cena) + b2·známá':'log(odhad) = b0 + b1·log(cena)'):(useD?'odhad = b0 + b1·cena + b2·známá':'odhad = b0 + b1·cena');
+  mStats.innerHTML=`<span>b0</span><span>${nf(b[0],2)}</span><span>b1 (cena)</span><span>${nf(b[1],3)}</span>`+(useD?`<span>b2 (známá značka)</span><span>${nf(b[2],useLog?3:1)}</span>`:'')+`<span>R²</span><span>${nf(fit.r2,2)}</span><span>počet odhadů</span><span>${fit.n}${dropped?` (vyřazeno ${dropped})`:''}</span>`;
+  const it=[];
+  if(useLog){it.push(`Když je produkt o 10 % dražší, odhad je v průměru vyšší o ${nf((Math.pow(1.1,b[1])-1)*100,1)} %. ${b[1]<1?'Sklon menší než 1: drahé věci podceňujeme, levné přeceňujeme.':'Sklon větší než 1: rozdíly v cenách přeháníme.'}`);
+    if(useD)it.push(`Produkt známé značky odhadujeme při stejné skutečné ceně o ${nf(Math.abs(Math.exp(b[2])-1)*100,0)} % ${b[2]>0?'výš':'níž'} než levnou nebo méně známou značku.`);}
+  else{it.push(`Každých 100 Kč skutečné ceny zvýší odhad v průměru o ${nf(b[1]*100,0)} Kč. ${b[1]<1?'Přímka je plošší než diagonála: drahé věci podceňujeme.':'Přímka je strmější než diagonála.'}`);
+    const cross=useD?null:b[0]/(1-b[1]);if(!useD&&b[1]<1&&cross>0)it.push(`Přímka protíná diagonálu kolem ${kc(cross)}: levnější věci třída přeceňuje, dražší podceňuje.`);
+    if(useD)it.push(`Produkt známé značky odhadujeme při stejné skutečné ceně o ${nf(Math.abs(b[2]),0)} Kč ${b[2]>0?'výš':'níž'} než levnou nebo méně známou značku.`);
+    it.push('Body u drahých produktů jsou víc rozházené: zkuste logaritmické osy.');}
+  mInterp.innerHTML=it.map(s=>`<li>${s}</li>`).join('');
+  const rows=means.map(m=>({...m,err:(m.y-m.x)/m.x})).sort((a,c)=>Math.abs(c.err)-Math.abs(a.err));
+  tProd.innerHTML='<tr><th>#</th><th>Produkt</th><th>Cena</th><th>Medián odhadu</th><th>Průměr</th><th>Chyba</th><th>n</th></tr>'+rows.map(r=>`<tr><td>${r.n}</td><td class="t">${esc(r.p.name)} <span style="color:var(--muted)">${esc(r.p.size)}</span> <span class="pill ${r.b?'br':'pr'}">${r.b?'známá':'levná'}</span></td><td>${kc(r.x)}</td><td>${kc(r.y)}</td><td>${kc(r.mean)}</td><td class="${r.err<0?'neg':'pos'}">${r.err>0?'+':'−'}${Math.round(Math.abs(r.err)*100)} %</td><td>${r.k}</td></tr>`).join('');}
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+/* ---------- product editor ---------- */
+function renderEdit(){tEdit.innerHTML='<tr><th>#</th><th>Produkt</th><th>Balení</th><th>Cena (Kč)</th><th>Známá značka</th><th>Akce</th><th>Rohlík</th></tr>'+P.map((p,i)=>`<tr><td>${p.n}</td><td><input class="cell txt" id="pn${i}" value="${esc(p.name)}"></td><td><input class="cell txt" style="min-width:90px" id="ps${i}" value="${esc(p.size)}"></td><td><input class="cell" id="pc${i}" value="${String(p.price).replace('.',',')}"></td><td><input type="checkbox" id="pb${i}" ${p.brand?'checked':''}></td><td class="t" style="color:var(--muted)">${esc(p.note||'')}</td><td class="t">${p.url?`<a href="${p.url}" target="_blank" rel="noopener">produkt</a> · <a href="${p.img}" target="_blank" rel="noopener">obrázek</a>`:''}</td></tr>`).join('');
+  P.forEach((p,i)=>{['pn','ps','pc','pb'].forEach(k=>document.getElementById(k+i).addEventListener('change',e=>{if(k==='pn')p.name=e.target.value;if(k==='ps')p.size=e.target.value;if(k==='pc'){const v=num(e.target.value);if(v>0){p.price=v;p.ok=1;}}if(k==='pb')p.brand=e.target.checked?1:0;save('prod',P);renderCards();render();}));});
+  renderCards();}
+function renderCards(){cards.innerHTML=P.map(p=>`<div class="card"><span class="n">${p.n}</span><span class="nm">${esc(p.name)}</span><span class="sz">${esc(p.size)}</span></div>`).join('');}
+btnReset.onclick=()=>{P=DEFAULT.map(p=>({...p}));save('prod',P);renderEdit();render();};
+
+/* ---------- paste ---------- */
+function useText(txt){try{const r=parse(txt);RAW=r.rows;pasteMsg.style.color='var(--muted)';
+  pasteMsg.textContent=`Načteno ${r.rows.length} ${r.rows.length===1?'respondent':r.rows.length<5?'respondenti':'respondentů'}, ${r.cols} produktů`+(r.partial?`, z toho ${r.partial} nedokončených (použijí se vyplněné odpovědi)`:'')+(r.empty?`. Prázdných řádků přeskočeno: ${r.empty}`:'')+'.';
+  render();show('pv');}catch(e){pasteMsg.style.color='';pasteMsg.textContent=e;show('pd');}}
+btnUse.onclick=()=>useText(paste.value);
+file.addEventListener('change',()=>{const f=file.files[0];if(!f)return;const fr=new FileReader();fr.onload=()=>{paste.value=fr.result;useText(fr.result);file.value='';};fr.onerror=()=>{pasteMsg.textContent='Soubor se nepodařilo přečíst.';};fr.readAsText(f,'utf-8');});
+btnSample.onclick=()=>{RAW=null;pasteMsg.textContent='';render();show('pv');};
+[optLog,optDummy,optMeans,optTrim].forEach(e=>e.addEventListener('input',render));
+
+/* ---------- tabs ---------- */
+const tabs=[...document.querySelectorAll('nav button')];
+function show(id){tabs.forEach(t=>t.setAttribute('aria-selected',t.dataset.tab===id));['pv','pd','pp'].forEach(p=>document.getElementById(p).hidden=p!==id);}
+tabs.forEach(t=>t.onclick=()=>show(t.dataset.tab));
+renderEdit();render();
+</script>
+
+</body></html>

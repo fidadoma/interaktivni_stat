@@ -1,0 +1,510 @@
+<!doctype html><html lang="cs"><head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Regrese na bytech</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one reading column with tabbed labs; each lab = plot left, controls right, stacks on phones */
+:root{
+  --bg:#f6f7f9; --panel:#ffffff; --ink:#18212b; --muted:#5b6773; --line:#d9dee4;
+  --fit:#1f5fa8; --you:#d0661c; --resid:#c2410c; --added:#9b1d63;
+  --c1:#1f5fa8; --c2:#2a8f6a; --c3:#c27a12; --near:#9cc3ea; --far:#173d6b;
+  --soft:#eaf0f7;
+  --display:"Bricolage Grotesque",ui-sans-serif,system-ui,sans-serif;
+  --body:"Instrument Sans",ui-sans-serif,system-ui,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#12171d; --panel:#1a2129; --ink:#e6ebf0; --muted:#9aa6b2; --line:#2e3843;
+  --fit:#6aa7ec; --you:#f0954f; --resid:#f08a52; --added:#e46aa9;
+  --c1:#6aa7ec; --c2:#5cc79d; --c3:#e6a94a; --near:#2b4e75; --far:#a9d0f5; --soft:#1f2a36; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#12171d; --panel:#1a2129; --ink:#e6ebf0; --muted:#9aa6b2; --line:#2e3843;
+  --fit:#6aa7ec; --you:#f0954f; --resid:#f08a52; --added:#e46aa9;
+  --c1:#6aa7ec; --c2:#5cc79d; --c3:#e6a94a; --near:#2b4e75; --far:#a9d0f5; --soft:#1f2a36; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.55;padding-inline:16px;padding-block:24px 48px}
+.wrap{max-width:1080px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
+header h1{font-family:var(--display);font-size:clamp(26px,4vw,38px);line-height:1.1;margin:0;text-wrap:balance}
+header p{margin:6px 0 0;color:var(--muted);max-width:70ch}
+.eq{font-family:var(--mono);font-size:13.5px}
+nav{display:flex;flex-wrap:wrap;gap:6px;border-bottom:1px solid var(--line);padding-bottom:0}
+nav button{font:500 14px var(--body);color:var(--muted);background:none;border:none;border-bottom:2px solid transparent;padding:8px 12px;cursor:pointer;margin-bottom:-1px}
+nav button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--fit)}
+nav button:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible{outline:2px solid var(--fit);outline-offset:2px}
+section{display:flex;flex-direction:column;gap:16px}
+h2{font-family:var(--display);font-size:22px;margin:0}
+h3{font-size:15px;margin:0;font-weight:600}
+.lead{margin:0;color:var(--muted);max-width:72ch}
+.lab{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:820px){.lab{grid-template-columns:1fr}}
+.plot{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:8px;min-width:0}
+.plot svg{width:100%;height:auto;display:block}
+.side{display:flex;flex-direction:column;gap:14px;min-width:0}
+.box{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:12px 14px;display:flex;flex-direction:column;gap:10px}
+label.row{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;font-size:14px}
+label.row input[type=range]{width:100%;accent-color:var(--you)}
+.val{font-family:var(--mono);font-size:13px;font-variant-numeric:tabular-nums;min-width:5ch;text-align:right}
+.chk{display:flex;gap:8px;align-items:center;font-size:14px;cursor:pointer}
+.stats{display:grid;grid-template-columns:1fr auto;gap:4px 12px;font-size:14px}
+.stats span:nth-child(even){font-family:var(--mono);font-variant-numeric:tabular-nums;text-align:right}
+.big{font-family:var(--mono);font-size:20px;font-variant-numeric:tabular-nums}
+.btns{display:flex;flex-wrap:wrap;gap:8px}
+button.b{font:500 13px var(--body);background:var(--soft);color:var(--ink);border:1px solid var(--line);border-radius:4px;padding:6px 10px;cursor:pointer}
+button.b:hover{border-color:var(--fit)}
+.legend{display:flex;flex-wrap:wrap;gap:12px;font-size:13px;color:var(--muted);padding:4px 6px 0}
+.legend i{display:inline-block;width:18px;height:3px;vertical-align:middle;margin-right:5px;border-radius:2px}
+.legend i.dot{width:9px;height:9px;border-radius:50%}
+.tip{font-size:13.5px;color:var(--muted);border-left:2px solid var(--line);padding-left:10px;margin:0}
+.tablewrap{overflow-x:auto}
+table{border-collapse:collapse;font-size:13.5px;width:100%}
+th,td{padding:5px 8px;border-bottom:1px solid var(--line);text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+th{font-weight:600;color:var(--muted);font-size:12.5px;text-transform:uppercase;letter-spacing:.04em}
+th:first-child,td:first-child{text-align:left}
+td{font-family:var(--mono);font-size:13px}
+td.t{font-family:var(--body);font-size:13.5px}
+.hi{background:var(--soft)}
+select{font:14px var(--body);padding:4px 6px;border:1px solid var(--line);border-radius:4px;background:var(--panel);color:var(--ink)}
+.interp{margin:0;padding-left:18px;font-size:14px;display:flex;flex-direction:column;gap:4px}
+.warn{color:var(--resid)}
+ol.ex{margin:0;padding-left:0;list-style:none;counter-reset:ex;display:flex;flex-direction:column;gap:12px;max-width:80ch}
+ol.ex>li{counter-increment:ex;background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:12px 14px 12px 48px;position:relative}
+ol.ex>li::before{content:counter(ex);position:absolute;left:14px;top:11px;font-family:var(--display);font-weight:700;font-size:18px;color:var(--fit)}
+ol.ex .tag{font-size:11.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-left:6px;font-weight:500}
+ol.ex p{margin:4px 0}
+details{margin-top:6px}
+summary{cursor:pointer;color:var(--fit);font-size:14px;font-weight:500}
+details>div{margin-top:6px;font-size:14px;border-left:2px solid var(--fit);padding-left:10px}
+code{font-family:var(--mono);font-size:12.5px;background:var(--soft);padding:1px 4px;border-radius:3px}
+.grid4{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;min-width:0}
+@media (max-width:560px){.grid4{grid-template-columns:1fr}}
+.grid4 h4{margin:2px 6px 0;font-size:13px;font-weight:600;color:var(--muted)}
+.bar{display:flex;height:14px;border-radius:3px;overflow:hidden;background:var(--line)}
+#barR{background:var(--fit)}#barE{background:var(--resid)}
+.axis text{font:11px var(--mono);fill:var(--muted)}
+.axis line,.axis path{stroke:var(--line)}
+.alab{font:12px var(--body);fill:var(--muted)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="wrap">
+<header>
+  <h1>Lineární regrese na cenách bytů</h1>
+  <p>60 smyšlených inzerátů bytů v Jihlavě, cenová hladina odpovídá aktuálním nabídkám (kolem 74 000 Kč/m², říjen 2026). Proměnné: <span class="eq">cena_mil</span> (mil. Kč), <span class="eq">plocha_m2</span>, <span class="eq">vzdalenost_km</span> od centra, <span class="eq">lokalita</span> (centrum / sídliště / okraj), <span class="eq">patro</span>.</p>
+</header>
+
+<nav role="tablist">
+  <button role="tab" id="t-1" aria-selected="true" data-tab="p1">1 · Jedna proměnná</button>
+  <button role="tab" id="t-6" aria-selected="false" data-tab="p6">2 · R² a korelace</button>
+  <button role="tab" id="t-2" aria-selected="false" data-tab="p2">3 · Více proměnných</button>
+  <button role="tab" id="t-3" aria-selected="false" data-tab="p3">4 · Dummy kódování</button>
+  <button role="tab" id="t-5" aria-selected="false" data-tab="p5">5 · Rezidua</button>
+  <button role="tab" id="t-4" aria-selected="false" data-tab="p4">Cvičení</button>
+</nav>
+
+<!-- TAB 1 -->
+<section id="p1">
+  <div><h2>Najděte přímku okem</h2>
+  <p class="lead">Posuvníky nastavte vlastní přímku <span class="eq">ŷ = b0 + b1·plocha</span>. Cílem je co nejmenší součet čtverců reziduí (SSE). Kliknutím do grafu přidáte vlastní byt.</p></div>
+  <div class="lab">
+    <div class="plot"><svg id="s1" viewBox="0 0 640 420" role="img" aria-label="Bodový graf ceny a plochy bytu"></svg>
+      <div class="legend"><span><i style="background:var(--you)"></i>vaše přímka</span><span><i style="background:var(--fit)"></i>nejlepší přímka (OLS)</span><span><i style="background:var(--resid)"></i>rezidua</span><span><i class="dot" style="background:var(--added)"></i>přidaný byt</span></div>
+    </div>
+    <div class="side">
+      <div class="box">
+        <h3>Vaše přímka</h3>
+        <label class="row" for="b0">b0<input type="range" id="b0" min="-2" max="3" step="0.05" value="1.5"><span class="val" id="b0v"></span></label>
+        <label class="row" for="b1">b1<input type="range" id="b1" min="0" max="0.1" step="0.001" value="0.04"><span class="val" id="b1v"></span></label>
+        <div class="stats"><span>SSE vaší přímky</span><span id="sseYou"></span><span>SSE nejlepší přímky</span><span id="sseBest">skryto</span></div>
+      </div>
+      <div class="box">
+        <label class="chk"><input type="checkbox" id="showRes" checked> Ukázat rezidua</label>
+        <label class="chk"><input type="checkbox" id="showOls"> Ukázat nejlepší přímku (OLS)</label>
+        <div id="olsBox" class="stats" hidden>
+          <span>b0 (intercept)</span><span id="o_b0"></span>
+          <span>b1 (sklon)</span><span id="o_b1"></span>
+          <span>r</span><span id="o_r"></span>
+          <span>R²</span><span id="o_r2"></span>
+        </div>
+        <div class="btns"><button class="b" id="snap">Nastavit moji přímku na OLS</button><button class="b" id="clearAdd">Smazat přidané byty</button></div>
+      </div>
+      <div class="box">
+        <h3>Predikce</h3>
+        <label class="row" for="px">plocha<input type="range" id="px" min="20" max="250" step="1" value="70"><span class="val" id="pxv"></span></label>
+        <div><span class="big" id="pred"></span> <span class="tip" id="extra" style="border:none;padding:0"></span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TAB R2 -->
+<section id="p6" hidden>
+  <div><h2>Odkud se bere R²</h2>
+  <p class="lead">Celková variabilita ceny kolem průměru (SST) se rozdělí na část, kterou vysvětlí přímka (SSR), a na rezidua (SSE). R² je podíl vysvětlené části: <span class="eq">R² = SSR / SST = r²</span>.</p></div>
+  <div class="lab">
+    <div class="plot"><svg id="s6" viewBox="0 0 640 420" role="img" aria-label="Rozklad variability kolem průměru a přímky"></svg>
+      <div class="legend"><span><i style="background:var(--muted)"></i>průměr ȳ</span><span><i style="background:var(--fit)"></i>regrese Y na X</span><span><i style="background:var(--you)"></i>regrese X na Y</span><span id="devleg"></span></div>
+    </div>
+    <div class="side">
+      <div class="box">
+        <h3>Data</h3>
+        <label class="chk"><input type="radio" name="src" value="byty" checked> Naše byty</label>
+        <label class="chk"><input type="radio" name="src" value="sim"> Simulace se zvolenou korelací</label>
+        <label class="row" for="rr">r<input type="range" id="rr" min="0" max="0.95" step="0.05" value="0.5" disabled><span class="val" id="rrv"></span></label>
+      </div>
+      <div class="box">
+        <h3>Ukázat odchylky</h3>
+        <label class="chk"><input type="radio" name="dev" value="sst" checked> od průměru (SST)</label>
+        <label class="chk"><input type="radio" name="dev" value="ssr"> přímka od průměru (SSR)</label>
+        <label class="chk"><input type="radio" name="dev" value="sse"> body od přímky (SSE)</label>
+        <div class="bar" aria-hidden="true"><div id="barR"></div><div id="barE"></div></div>
+        <div class="stats" id="st6"></div>
+      </div>
+      <div class="box">
+        <label class="chk"><input type="checkbox" id="zs"> Standardizovat obě proměnné (z-skóry)</label>
+        <label class="chk"><input type="checkbox" id="xy"> Ukázat i regresi X na Y</label>
+        <div class="stats" id="sl6"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TAB 2 -->
+<section id="p2" hidden>
+  <div><h2>Co dělá druhý prediktor</h2>
+  <p class="lead">Větší byty bývají dál od centra a vzdálenost cenu snižuje. Jednoduchý model to míchá dohromady. Vícenásobný model odhaduje vliv plochy <em>při stejné vzdálenosti</em>.</p></div>
+  <div class="lab">
+    <div class="plot"><svg id="s2" viewBox="0 0 640 420" role="img" aria-label="Cena a plocha, barva podle vzdálenosti"></svg>
+      <div class="legend"><span><i class="dot" style="background:var(--near)"></i>blízko centra</span><span><i class="dot" style="background:var(--far)"></i>daleko</span><span><i style="background:var(--muted)"></i>jen plocha (přerušovaná)</span><span><i style="background:var(--fit)"></i>plocha + vzdálenost, pro 1 km a 6 km</span></div>
+    </div>
+    <div class="side">
+      <div class="box">
+        <h3>Prediktory v modelu</h3>
+        <label class="chk"><input type="checkbox" id="m_pl" checked disabled> plocha_m2</label>
+        <label class="chk"><input type="checkbox" id="m_d" checked> vzdalenost_km</label>
+        <label class="chk"><input type="checkbox" id="m_p"> patro <span style="color:var(--muted);font-size:13px">(s cenou nesouvisí)</span></label>
+        <div class="tablewrap"><table id="coef2"></table></div>
+        <div class="stats" id="fit2"></div>
+      </div>
+      <div class="box">
+        <h3>Kalkulačka</h3>
+        <label class="row" for="cx1">plocha<input type="range" id="cx1" min="30" max="105" value="70"><span class="val" id="cx1v"></span></label>
+        <label class="row" for="cx2">vzdál.<input type="range" id="cx2" min="0.3" max="6" step="0.1" value="3"><span class="val" id="cx2v"></span></label>
+        <div class="eq" id="calc2"></div>
+      </div>
+    </div>
+  </div>
+  <div class="box">
+    <h3>Srovnání modelů</h3>
+    <div class="tablewrap"><table id="cmp"></table></div>
+    <p class="tip">Koeficient plochy se po přidání vzdálenosti zvýší. R² po přidání patra vždy trochu vzroste, upravené R² klesne.</p>
+  </div>
+</section>
+
+<!-- TAB 3 -->
+<section id="p3" hidden>
+  <div><h2>Kategorie v regresi</h2>
+  <p class="lead">Lokalitu (3 kategorie) převedeme na 2 nulajedničkové proměnné. Referenční kategorie žádnou dummy nemá, schová se v interceptu.</p></div>
+  <div class="lab">
+    <div class="plot"><svg id="s3" viewBox="0 0 640 420" role="img" aria-label="Cena a plocha podle lokality"></svg>
+      <div class="legend" id="leg3"></div>
+    </div>
+    <div class="side">
+      <div class="box">
+        <label class="row" for="ref" style="grid-template-columns:auto 1fr">Referenční kategorie <select id="ref"><option>centrum</option><option>sídliště</option><option>okraj</option></select></label>
+        <label class="chk"><input type="checkbox" id="bad"> Chybně: lokalita jako číslo 1, 2, 3</label>
+        <div class="tablewrap"><table id="coef3"></table></div>
+        <ul class="interp" id="interp3"></ul>
+      </div>
+    </div>
+  </div>
+  <div class="box">
+    <h3>Jak data vypadají po překódování (prvních 8 řádků)</h3>
+    <div class="tablewrap"><table id="dum"></table></div>
+    <p class="tip">Třetí sloupec pro referenční kategorii nepřidáváme: byl by součtem ostatních odečteným od jedničky (interceptu) a model by nešel spočítat. Tomu se říká past dummy proměnných.</p>
+  </div>
+</section>
+
+<!-- TAB 5: RESIDUALS -->
+<section id="p5" hidden>
+  <div><h2>Co prozradí rezidua</h2>
+  <p class="lead">Reziduum je rozdíl mezi skutečnou a předpovězenou hodnotou, <span class="eq">e = y − ŷ</span>. Pokud model sedí, rezidua vypadají jako náhodný šum: kolem nuly, bez vzoru, se stejným rozptylem a zhruba normálně rozložená. Vyberte scénář a hledejte, co je špatně.</p></div>
+  <div class="lab">
+    <div class="grid4">
+      <div class="plot"><h4>Data a model</h4><svg id="r1" viewBox="0 0 320 250" role="img" aria-label="Data s regresní přímkou"></svg></div>
+      <div class="plot"><h4>Rezidua vs. predikce ŷ</h4><svg id="r2" viewBox="0 0 320 250" role="img" aria-label="Rezidua proti predikovaným hodnotám"></svg></div>
+      <div class="plot"><h4>Histogram reziduí</h4><svg id="r3" viewBox="0 0 320 250" role="img" aria-label="Histogram standardizovaných reziduí"></svg></div>
+      <div class="plot"><h4>Q-Q graf</h4><svg id="r4" viewBox="0 0 320 250" role="img" aria-label="Q-Q graf standardizovaných reziduí"></svg></div>
+    </div>
+    <div class="side">
+      <div class="box" id="scen">
+        <h3>Scénář</h3>
+        <label class="chk"><input type="radio" name="sc" value="byty" checked> Naše byty (cena ~ plocha)</label>
+        <label class="chk"><input type="radio" name="sc" value="nl"> Scénář A</label>
+        <label class="chk"><input type="radio" name="sc" value="het"> Scénář B</label>
+        <label class="chk"><input type="radio" name="sc" value="skew"> Scénář C</label>
+        <label class="chk"><input type="radio" name="sc" value="out"> Scénář D</label>
+        <label class="chk" style="margin-top:4px"><input type="checkbox" id="sq"> Přidat člen x² (plocha²)</label>
+        <div class="stats" id="rstat"></div>
+      </div>
+      <div class="box">
+        <label class="chk"><input type="checkbox" id="reveal"> Odhalit, co je špatně</label>
+        <div id="look" class="tip" style="border:none;padding:0" hidden></div>
+      </div>
+      <div class="box">
+        <h3>Na co se dívat</h3>
+        <ul class="interp">
+          <li><b>Rezidua vs. ŷ:</b> oblouk = nelinearita, trychtýř = heteroskedasticita.</li>
+          <li><b>Histogram a Q-Q:</b> body mimo diagonálu = rezidua nejsou normální.</li>
+          <li><b>Osamocený bod daleko od ostatních:</b> odlehlá hodnota, může táhnout přímku.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TAB 4 -->
+<section id="p4" hidden>
+  <div><h2>Cvičení do hodiny</h2>
+  <p class="lead">Všechny úlohy jdou dělat přímo na této stránce během přednášky. Řešení jsou schovaná a čísla se počítají ze stejných dat.</p></div>
+  <ol class="ex">
+    <li><h3>Soutěž o nejlepší přímku <span class="tag">záložka 1 · 5 min</span></h3>
+      <p>Bez zapnutého OLS nastavte b0 a b1 tak, aby SSE bylo co nejmenší. Napište své SSE do chatu. Pak zapněte nejlepší přímku.</p>
+      <details><summary>Řešení a pointa</summary><div>Nejmenší možné SSE je <b data-v="sse1"></b>. Nikdo se pod něj nedostane, protože metoda nejmenších čtverců (OLS) je přesně ta přímka, která SSE minimalizuje. Dobré je ukázat, že malá změna sklonu zvedne SSE víc než stejně velká změna interceptu (sklon násobí plochu v desítkách m²).</div></details></li>
+    <li><h3>Co znamenají b0 a b1 <span class="tag">záložka 1</span></h3>
+      <p>Interpretujte oba koeficienty nejlepší přímky v jednotkách Kč a m². Dává b0 smysl?</p>
+      <details><summary>Řešení</summary><div>b1 = <b data-v="m1.b1"></b>: každý m² navíc zvyšuje očekávanou cenu o zhruba <b data-v="m1.b1kc"></b> Kč. b0 = <b data-v="m1.b0"></b> je předpověď pro byt o ploše 0 m², tedy mimo data. Slouží jen k umístění přímky.</div></details></li>
+    <li><h3>Vliv jednoho bytu <span class="tag">záložka 1</span></h3>
+      <p>Klikněte do grafu a přidejte byt 100 m² za 2 mil. Kč. Pak ho smažte a přidejte byt 65 m² za 2 mil. Kč. Který víc pohnul sklonem a R²? Proč?</p>
+      <details><summary>Řešení</summary><div>Bod na okraji rozsahu plochy (100 m²) má větší páku: přímka se kolem průměru plochy otáčí, takže vzdálené body sklon „přetáčejí“. Bod uprostřed hlavně posune přímku dolů a sníží R², sklon skoro nezmění. Navazuje na téma odlehlých hodnot.</div></details></li>
+    <li><h3>Predikce a extrapolace <span class="tag">záložka 1</span></h3>
+      <p>Jaká je predikce pro byt 70 m²? A pro 200 m²? Které predikci věříte víc?</p>
+      <details><summary>Řešení</summary><div>70 m² → <b data-v="pred70"></b> mil. Kč, 200 m² → <b data-v="pred200"></b> mil. Kč. V datech je plocha jen 28–105 m², takže 200 m² je extrapolace: nevíme, jestli vztah zůstává lineární (velké byty mívají jinou cenu za m²).</div></details></li>
+    <li><h3>Rozklad variability <span class="tag">záložka 2</span></h3>
+      <p>Přepínejte mezi SST, SSR a SSE. Které čáry jsou nejdelší? Jak spolu souvisí tři součty a co z nich je R²?</p>
+      <details><summary>Řešení</summary><div>SST = SSR + SSE (<b data-v="dec.sst"></b> = <b data-v="dec.ssr"></b> + <b data-v="dec.sse"></b>). R² = SSR / SST = <b data-v="dec.r2"></b>, tedy přímka vysvětlí asi <b data-v="dec.pct"></b> % variability ceny. U jedné proměnné je R² přesně druhá mocnina korelace r.</div></details></li>
+    <li><h3>Síla vztahu a R² <span class="tag">záložka 2 · simulace</span></h3>
+      <p>Přepněte na simulaci a nastavte r = 0,3, 0,5 a 0,9. Kolik procent variability přímka vysvětlí? Překvapí vás, jak málo to je u r = 0,3?</p>
+      <details><summary>Řešení</summary><div>r = 0,3 → R² = 0,09 (9 %), r = 0,5 → 25 %, r = 0,9 → 81 %. Korelace, která v praxi zní jako „střední“, vysvětlí jen malou část variability. Modrý pruh SSR to ukazuje přímo.</div></details></li>
+    <li><h3>Standardizace a dvě přímky <span class="tag">záložka 2</span></h3>
+      <p>Zapněte z-skóry. Jaký je teď sklon přímky? Pak zapněte regresi X na Y. Proč to není stejná přímka?</p>
+      <details><summary>Řešení</summary><div>Po standardizaci je sklon roven r (u našich bytů <b data-v="dec.r"></b>) a přímka prochází počátkem. V původních jednotkách platí b1 = r · s<sub>y</sub>/s<sub>x</sub>. Regrese Y na X minimalizuje svislé odchylky, regrese X na Y vodorovné, proto dávají dvě různé přímky. Splynou jen při r = ±1. Při r = 0 je jedna vodorovná a druhá svislá. Obě přímky jsou „plošší“ než diagonála: predikce se vždy přiklání k průměru.</div></details></li>
+    <li><h3>Proč se změnil koeficient plochy <span class="tag">záložka 3</span></h3>
+      <p>Porovnejte b pro plochu v modelu jen s plochou a v modelu s plochou a vzdáleností. Proč se liší?</p>
+      <details><summary>Řešení</summary><div>Z <b data-v="m1.b1"></b> na <b data-v="m2.b1"></b>. Plocha a vzdálenost spolu korelují (r = <b data-v="rpd"></b>): velké byty jsou častěji dál od centra, kde je dráž kvůli vzdálenosti levněji. Jednoduchý model tak část „slevy za vzdálenost“ přičítá ploše. Vícenásobný model říká: o kolik je dražší o 1 m² větší byt <em>ve stejné vzdálenosti</em>. Graf ukazuje dvě rovnoběžné modré přímky (1 km a 6 km), každá je strmější než šedá.</div></details></li>
+    <li><h3>Interpretace vícenásobného modelu <span class="tag">záložka 3</span></h3>
+      <p>Napište větu, která interpretuje koeficient vzdálenosti. Pak kalkulačkou spočítejte cenu bytu 60 m², 2 km od centra.</p>
+      <details><summary>Řešení</summary><div>„Při stejné ploše je byt o každý kilometr dál od centra v průměru o <b data-v="m2.b2kc"></b> Kč levnější.“ Predikce: <b data-v="m2.b0"></b> + <b data-v="m2.b1"></b>·60 + (<b data-v="m2.b2"></b>)·2 = <b data-v="pred602"></b> mil. Kč.</div></details></li>
+    <li><h3>R² vs. upravené R² <span class="tag">záložka 3</span></h3>
+      <p>Přidejte do modelu patro. Co se stane s R² a s upraveným R²? Který model byste vybrali?</p>
+      <details><summary>Řešení</summary><div>R² vzroste z <b data-v="m2.r24"></b> na <b data-v="m3.r24"></b>, upravené R² klesne z <b data-v="m2.adj"></b> na <b data-v="m3.adj"></b>. R² nikdy neklesne přidáním proměnné, i kdyby to byl šum. Upravené R² penalizuje počet parametrů, proto vybíráme model bez patra.</div></details></li>
+    <li><h3>Dummy kódování a reference <span class="tag">záložka 4</span></h3>
+      <p>S referencí „centrum“ interpretujte oba dummy koeficienty. Pak přepněte referenci na „okraj“. Co se změnilo a co zůstalo stejné?</p>
+      <details><summary>Řešení</summary><div>Reference centrum: sídliště je při stejné ploše o <b data-v="d.s"></b> mil. Kč levnější, okraj o <b data-v="d.o"></b> mil. Kč. Po změně reference se změní intercept a dummy koeficienty (teď jsou to rozdíly vůči okraji), ale <em>predikce, R², koeficient plochy i rozdíly mezi skupinami zůstanou stejné</em>. Je to jen jiný popis téhož modelu.</div></details></li>
+    <li><h3>Proč ne čísla 1, 2, 3 <span class="tag">záložka 4</span></h3>
+      <p>Zapněte chybné kódování. Jaký předpoklad o lokalitách tím model dělá? A proč nepřidáváme třetí dummy?</p>
+      <details><summary>Řešení</summary><div>Číselné kódování vynutí stejný rozdíl centrum→sídliště jako sídliště→okraj a pevné pořadí. Data ale ukazují nestejné kroky (<b data-v="d.s"></b> a <b data-v="d.os"></b>). U nominální proměnné (např. značka auta) by pořadí nedávalo smysl vůbec. Třetí dummy nejde přidat, protože D1 + D2 + D3 = 1 pro každý řádek, což je přesně sloupec interceptu (dokonalá multikolinearita).</div></details></li>
+    <li><h3>Diagnóza podle reziduí <span class="tag">záložka 5 · 5 min</span></h3>
+      <p>Projděte scénáře A–D a ke každému určete, který předpoklad je porušený a na kterém grafu je to vidět. Hlasování rukou nebo do chatu, pak odhalit.</p>
+      <details><summary>Řešení</summary><div>A: nelinearita (oblouk v grafu reziduí vs. ŷ). B: heteroskedasticita (trychtýř, rozptyl roste s ŷ). C: nenormální, šikmá rezidua (asymetrický histogram, Q-Q se ohýbá na pravém konci). D: odlehlá hodnota s velkou pákou (jeden bod daleko, v Q-Q úplně mimo). Naše byty: bez zjevného problému.</div></details></li>
+    <li><h3>Vysoké R² ještě neznamená dobrý model <span class="tag">záložka 5</span></h3>
+      <p>Jaké R² má scénář A? Proč je model přesto špatný a co by bylo potřeba udělat?</p>
+      <details><summary>Řešení</summary><div>R² = <b data-v="nl.r2"></b>, tedy vysoké. Přímka přesto systematicky přestřeluje na krajích a podstřeluje uprostřed, takže predikce pro malé a velké byty jsou zkreslené. R² měří, kolik variability model vysvětlí, ne jestli má správný tvar. Řešením je přidat nelineární člen (např. x², viz přednáška: i to je lineární regrese, protože jsou lineární koeficienty).</div></details></li>
+    <li><h3>Oprava nelinearity <span class="tag">záložka 5</span></h3>
+      <p>Ve scénáři A zaškrtněte „Přidat člen x²“. Co se stalo s grafem reziduí a s R²? Je to pořád lineární regrese?</p>
+      <details><summary>Řešení</summary><div>Oblouk v reziduích zmizí a R² vzroste z <b data-v="nl.r2"></b> na <b data-v="nl.r2q"></b>. Je to stále lineární regrese: model <span class="eq">b0 + b1·x + b2·x²</span> je lineární v koeficientech b, jen jeden z prediktorů je x². U „našich bytů“ člen x² skoro nic nepřidá, takže tam není potřeba.</div></details></li>
+    <li><h3>Zápis do textu <span class="tag">domácí / závěr hodiny</span></h3>
+      <p>Napište dvě věty výsledků pro model plocha + vzdálenost tak, jak by byly v seminární práci (koeficienty, R², interpretace v jednotkách, 2 desetinná místa).</p>
+      <details><summary>Vzor</summary><div>„Cenu bytu jsme modelovali lineární regresí s plochou a vzdáleností od centra jako prediktory. Model vysvětlil <b data-v="m2.r2pct"></b> % variability ceny (upravené R² = <b data-v="m2.adj"></b>); každý m² navíc zvyšoval cenu v průměru o <b data-v="m2.b1kc"></b> Kč a každý kilometr od centra ji snižoval o <b data-v="m2.b2kc"></b> Kč.“</div></details></li>
+  </ol>
+</section>
+</div>
+
+<script>
+const DATA = [{"id": 1, "plocha_m2": 93, "vzdalenost_km": 2.8, "lokalita": "sídliště", "patro": 3, "cena_mil": 6.44}, {"id": 2, "plocha_m2": 40, "vzdalenost_km": 1.6, "lokalita": "sídliště", "patro": 3, "cena_mil": 3.94}, {"id": 3, "plocha_m2": 71, "vzdalenost_km": 0.4, "lokalita": "centrum", "patro": 0, "cena_mil": 4.81}, {"id": 4, "plocha_m2": 56, "vzdalenost_km": 1.0, "lokalita": "centrum", "patro": 7, "cena_mil": 4.69}, {"id": 5, "plocha_m2": 45, "vzdalenost_km": 1.4, "lokalita": "sídliště", "patro": 3, "cena_mil": 3.67}, {"id": 6, "plocha_m2": 58, "vzdalenost_km": 1.8, "lokalita": "sídliště", "patro": 6, "cena_mil": 4.38}, {"id": 7, "plocha_m2": 61, "vzdalenost_km": 1.8, "lokalita": "sídliště", "patro": 2, "cena_mil": 4.54}, {"id": 8, "plocha_m2": 75, "vzdalenost_km": 1.9, "lokalita": "sídliště", "patro": 6, "cena_mil": 5.33}, {"id": 9, "plocha_m2": 85, "vzdalenost_km": 1.7, "lokalita": "sídliště", "patro": 4, "cena_mil": 6.53}, {"id": 10, "plocha_m2": 29, "vzdalenost_km": 0.3, "lokalita": "centrum", "patro": 3, "cena_mil": 3.36}, {"id": 11, "plocha_m2": 48, "vzdalenost_km": 2.5, "lokalita": "sídliště", "patro": 6, "cena_mil": 3.02}, {"id": 12, "plocha_m2": 75, "vzdalenost_km": 1.0, "lokalita": "centrum", "patro": 1, "cena_mil": 5.99}, {"id": 13, "plocha_m2": 34, "vzdalenost_km": 2.0, "lokalita": "sídliště", "patro": 6, "cena_mil": 3.19}, {"id": 14, "plocha_m2": 105, "vzdalenost_km": 2.0, "lokalita": "sídliště", "patro": 0, "cena_mil": 6.91}, {"id": 15, "plocha_m2": 92, "vzdalenost_km": 6.0, "lokalita": "okraj", "patro": 8, "cena_mil": 4.69}, {"id": 16, "plocha_m2": 31, "vzdalenost_km": 0.3, "lokalita": "centrum", "patro": 3, "cena_mil": 3.48}, {"id": 17, "plocha_m2": 72, "vzdalenost_km": 3.9, "lokalita": "okraj", "patro": 8, "cena_mil": 4.58}, {"id": 18, "plocha_m2": 75, "vzdalenost_km": 1.2, "lokalita": "sídliště", "patro": 4, "cena_mil": 5.84}, {"id": 19, "plocha_m2": 29, "vzdalenost_km": 0.3, "lokalita": "centrum", "patro": 3, "cena_mil": 3.4}, {"id": 20, "plocha_m2": 42, "vzdalenost_km": 0.9, "lokalita": "centrum", "patro": 3, "cena_mil": 4.12}, {"id": 21, "plocha_m2": 41, "vzdalenost_km": 0.3, "lokalita": "centrum", "patro": 2, "cena_mil": 3.67}, {"id": 22, "plocha_m2": 64, "vzdalenost_km": 4.3, "lokalita": "okraj", "patro": 0, "cena_mil": 3.54}, {"id": 23, "plocha_m2": 72, "vzdalenost_km": 2.2, "lokalita": "sídliště", "patro": 0, "cena_mil": 5.5}, {"id": 24, "plocha_m2": 63, "vzdalenost_km": 0.3, "lokalita": "centrum", "patro": 0, "cena_mil": 5.15}, {"id": 25, "plocha_m2": 99, "vzdalenost_km": 3.9, "lokalita": "okraj", "patro": 5, "cena_mil": 6.06}, {"id": 26, "plocha_m2": 91, "vzdalenost_km": 3.6, "lokalita": "okraj", "patro": 7, "cena_mil": 5.6}, {"id": 27, "plocha_m2": 59, "vzdalenost_km": 0.3, "lokalita": "centrum", "patro": 0, "cena_mil": 4.39}, {"id": 28, "plocha_m2": 44, "vzdalenost_km": 1.6, "lokalita": "sídliště", "patro": 3, "cena_mil": 3.01}, {"id": 29, "plocha_m2": 56, "vzdalenost_km": 1.6, "lokalita": "sídliště", "patro": 7, "cena_mil": 3.88}, {"id": 30, "plocha_m2": 94, "vzdalenost_km": 3.9, "lokalita": "okraj", "patro": 7, "cena_mil": 5.91}, {"id": 31, "plocha_m2": 55, "vzdalenost_km": 2.2, "lokalita": "sídliště", "patro": 3, "cena_mil": 4.89}, {"id": 32, "plocha_m2": 104, "vzdalenost_km": 3.4, "lokalita": "okraj", "patro": 7, "cena_mil": 6.74}, {"id": 33, "plocha_m2": 72, "vzdalenost_km": 1.7, "lokalita": "sídliště", "patro": 5, "cena_mil": 5.86}, {"id": 34, "plocha_m2": 46, "vzdalenost_km": 2.1, "lokalita": "sídliště", "patro": 5, "cena_mil": 3.34}, {"id": 35, "plocha_m2": 79, "vzdalenost_km": 2.7, "lokalita": "sídliště", "patro": 3, "cena_mil": 5.9}, {"id": 36, "plocha_m2": 79, "vzdalenost_km": 0.7, "lokalita": "centrum", "patro": 7, "cena_mil": 5.56}, {"id": 37, "plocha_m2": 68, "vzdalenost_km": 1.4, "lokalita": "sídliště", "patro": 2, "cena_mil": 5.65}, {"id": 38, "plocha_m2": 49, "vzdalenost_km": 0.7, "lokalita": "centrum", "patro": 8, "cena_mil": 4.69}, {"id": 39, "plocha_m2": 77, "vzdalenost_km": 2.0, "lokalita": "sídliště", "patro": 0, "cena_mil": 5.41}, {"id": 40, "plocha_m2": 65, "vzdalenost_km": 4.4, "lokalita": "okraj", "patro": 5, "cena_mil": 4.39}, {"id": 41, "plocha_m2": 78, "vzdalenost_km": 1.9, "lokalita": "sídliště", "patro": 7, "cena_mil": 5.98}, {"id": 42, "plocha_m2": 70, "vzdalenost_km": 2.6, "lokalita": "sídliště", "patro": 0, "cena_mil": 4.59}, {"id": 43, "plocha_m2": 37, "vzdalenost_km": 2.6, "lokalita": "sídliště", "patro": 7, "cena_mil": 2.3}, {"id": 44, "plocha_m2": 98, "vzdalenost_km": 3.7, "lokalita": "okraj", "patro": 5, "cena_mil": 6.52}, {"id": 45, "plocha_m2": 29, "vzdalenost_km": 0.9, "lokalita": "centrum", "patro": 1, "cena_mil": 4.01}, {"id": 46, "plocha_m2": 52, "vzdalenost_km": 2.8, "lokalita": "sídliště", "patro": 4, "cena_mil": 3.15}, {"id": 47, "plocha_m2": 41, "vzdalenost_km": 1.1, "lokalita": "centrum", "patro": 1, "cena_mil": 3.77}, {"id": 48, "plocha_m2": 54, "vzdalenost_km": 1.6, "lokalita": "sídliště", "patro": 7, "cena_mil": 3.77}, {"id": 49, "plocha_m2": 76, "vzdalenost_km": 3.0, "lokalita": "okraj", "patro": 5, "cena_mil": 5.04}, {"id": 50, "plocha_m2": 70, "vzdalenost_km": 2.5, "lokalita": "sídliště", "patro": 3, "cena_mil": 4.52}, {"id": 51, "plocha_m2": 83, "vzdalenost_km": 1.8, "lokalita": "sídliště", "patro": 5, "cena_mil": 6.11}, {"id": 52, "plocha_m2": 66, "vzdalenost_km": 0.6, "lokalita": "centrum", "patro": 6, "cena_mil": 4.85}, {"id": 53, "plocha_m2": 93, "vzdalenost_km": 2.8, "lokalita": "sídliště", "patro": 6, "cena_mil": 6.0}, {"id": 54, "plocha_m2": 55, "vzdalenost_km": 3.0, "lokalita": "okraj", "patro": 3, "cena_mil": 3.61}, {"id": 55, "plocha_m2": 70, "vzdalenost_km": 1.8, "lokalita": "sídliště", "patro": 7, "cena_mil": 5.37}, {"id": 56, "plocha_m2": 67, "vzdalenost_km": 3.2, "lokalita": "okraj", "patro": 5, "cena_mil": 4.44}, {"id": 57, "plocha_m2": 30, "vzdalenost_km": 0.9, "lokalita": "centrum", "patro": 0, "cena_mil": 2.99}, {"id": 58, "plocha_m2": 46, "vzdalenost_km": 0.8, "lokalita": "centrum", "patro": 4, "cena_mil": 3.97}, {"id": 59, "plocha_m2": 34, "vzdalenost_km": 0.3, "lokalita": "centrum", "patro": 3, "cena_mil": 2.85}, {"id": 60, "plocha_m2": 47, "vzdalenost_km": 1.4, "lokalita": "sídliště", "patro": 1, "cena_mil": 3.93}];
+const N = DATA.length;
+const nf = (x,d=3)=> (x<0?'−':'') + Math.abs(x).toLocaleString('cs-CZ',{minimumFractionDigits:d,maximumFractionDigits:d});
+const kc = x => Math.round(Math.abs(x)*1e6/1000)*1000 .toLocaleString?.call ? (Math.round(Math.abs(x)*1e6/1000)*1000).toLocaleString('cs-CZ') : '';
+
+function solve(A,b){const n=b.length;const M=A.map((r,i)=>[...r,b[i]]);
+  for(let c=0;c<n;c++){let p=c;for(let r=c+1;r<n;r++)if(Math.abs(M[r][c])>Math.abs(M[p][c]))p=r;[M[c],M[p]]=[M[p],M[c]];
+    if(Math.abs(M[c][c])<1e-12)return null;for(let r=0;r<n;r++){if(r===c)continue;const f=M[r][c]/M[c][c];for(let k=c;k<=n;k++)M[r][k]-=f*M[c][k];}}
+  return M.map((r,i)=>r[n]/r[i]);}
+function ols(X,y){const n=y.length,k=X[0].length;const A=Array.from({length:k},()=>Array(k).fill(0)),b=Array(k).fill(0);
+  for(let i=0;i<n;i++)for(let a=0;a<k;a++){b[a]+=X[i][a]*y[i];for(let c=0;c<k;c++)A[a][c]+=X[i][a]*X[i][c];}
+  const beta=solve(A,b);const my=y.reduce((s,v)=>s+v,0)/n;let sse=0,sst=0;
+  for(let i=0;i<n;i++){const f=X[i].reduce((s,v,j)=>s+v*beta[j],0);sse+=(y[i]-f)**2;sst+=(y[i]-my)**2;}
+  const r2=1-sse/sst,p=k-1;return{beta,sse,r2,adj:1-(1-r2)*(n-1)/(n-p-1)};}
+const yAll=DATA.map(d=>d.cena_mil);
+
+/* ---------- SVG plotting ---------- */
+const NS='http://www.w3.org/2000/svg';
+const W=640,H=420,M={l:52,r:16,t:14,b:44};
+function el(t,a,p){const e=document.createElementNS(NS,t);for(const k in a)e.setAttribute(k,a[k]);if(p)p.appendChild(e);return e;}
+function ticks(lo,hi,n=6){const s=(hi-lo)/n,m=10**Math.floor(Math.log10(s)),f=s/m,st=(f<1.5?1:f<3?2:f<7?5:10)*m;const out=[];for(let v=Math.ceil(lo/st)*st;v<=hi+1e-9;v+=st)out.push(+v.toFixed(10));return out;}
+function frame(svg,xl,yl,xlab,ylab,W=640,H=420,nt=6){svg.innerHTML='';
+  const sx=x=>M.l+(x-xl[0])/(xl[1]-xl[0])*(W-M.l-M.r), sy=y=>H-M.b-(y-yl[0])/(yl[1]-yl[0])*(H-M.t-M.b);
+  const g=el('g',{class:'axis'},svg);
+  for(const t of ticks(...yl,nt)){el('line',{x1:M.l,x2:W-M.r,y1:sy(t),y2:sy(t),'stroke-width':1,opacity:.6},g);const tx=el('text',{x:M.l-6,y:sy(t)+4,'text-anchor':'end'},g);tx.textContent=t.toLocaleString('cs-CZ');}
+  for(const t of ticks(...xl,nt)){el('line',{x1:sx(t),x2:sx(t),y1:H-M.b,y2:H-M.b+5},g);const tx=el('text',{x:sx(t),y:H-M.b+18,'text-anchor':'middle'},g);tx.textContent=t.toLocaleString('cs-CZ');}
+  el('line',{x1:M.l,x2:W-M.r,y1:H-M.b,y2:H-M.b,'stroke-width':1},g);
+  const a1=el('text',{x:(M.l+W-M.r)/2,y:H-6,'text-anchor':'middle',class:'alab'},svg);a1.textContent=xlab;
+  const a2=el('text',{x:14,y:(M.t+H-M.b)/2,'text-anchor':'middle',class:'alab',transform:`rotate(-90 14 ${(M.t+H-M.b)/2})`},svg);a2.textContent=ylab;
+  const clip='c'+svg.id;const d=el('defs',{},svg);const cp=el('clipPath',{id:clip},d);el('rect',{x:M.l,y:M.t,width:W-M.l-M.r,height:H-M.t-M.b},cp);
+  const plot=el('g',{'clip-path':`url(#${clip})`},svg);
+  const line=(b0,b1,style)=>el('line',{x1:sx(xl[0]),x2:sx(xl[1]),y1:sy(b0+b1*xl[0]),y2:sy(b0+b1*xl[1]),style},plot);
+  return{sx,sy,plot,line,inv:(px,py)=>[xl[0]+(px-M.l)/(W-M.l-M.r)*(xl[1]-xl[0]),yl[0]+(H-M.b-py)/(H-M.t-M.b)*(yl[1]-yl[0])]};}
+
+/* ---------- Tab 1 ---------- */
+const s1=document.getElementById('s1');let added=[];
+const XL1=[20,115],YL1=[0,9];
+function fit1(){const pts=DATA.map(d=>[d.plocha_m2,d.cena_mil]).concat(added);const f=ols(pts.map(p=>[1,p[0]]),pts.map(p=>p[1]));
+  const mx=pts.reduce((s,p)=>s+p[0],0)/pts.length,my=pts.reduce((s,p)=>s+p[1],0)/pts.length;let sxy=0,sxx=0,syy=0;for(const[x,y]of pts){sxy+=(x-mx)*(y-my);sxx+=(x-mx)**2;syy+=(y-my)**2;}
+  f.r=sxy/Math.sqrt(sxx*syy);f.pts=pts;return f;}
+function draw1(){const b0=+b0i.value,b1=+b1i.value;b0v.textContent=nf(b0,2);b1v.textContent=nf(b1,3);
+  const f=fit1();const F=frame(s1,XL1,YL1,'plocha (m²)','cena (mil. Kč)');
+  let sse=0;for(const[x,y]of f.pts){const yh=b0+b1*x;sse+=(y-yh)**2;
+    if(showRes.checked)el('line',{x1:F.sx(x),x2:F.sx(x),y1:F.sy(y),y2:F.sy(yh),style:'stroke:var(--resid);stroke-width:1.2;opacity:.75'},F.plot);}
+  if(showOls.checked)F.line(f.beta[0],f.beta[1],'stroke:var(--fit);stroke-width:2.5');
+  F.line(b0,b1,'stroke:var(--you);stroke-width:2.5');
+  DATA.forEach(d=>el('circle',{cx:F.sx(d.plocha_m2),cy:F.sy(d.cena_mil),r:4.2,style:'fill:var(--ink);fill-opacity:.55'},F.plot));
+  added.forEach(([x,y])=>el('circle',{cx:F.sx(x),cy:F.sy(y),r:6,style:'fill:var(--added);stroke:var(--panel);stroke-width:1.5'},F.plot));
+  sseYou.textContent=nf(sse,2);
+  olsBox.hidden=!showOls.checked;sseBest.textContent=showOls.checked?nf(f.sse,2):'skryto';
+  o_b0.textContent=nf(f.beta[0],3);o_b1.textContent=nf(f.beta[1],4);o_r.textContent=nf(f.r,2);o_r2.textContent=nf(f.r2,2);
+  const x=+px.value;pxv.textContent=x+' m²';const bb=showOls.checked?f.beta:[b0,b1];
+  pred.textContent=nf(bb[0]+bb[1]*x,2)+' mil. Kč';
+  extra.textContent=(showOls.checked?'(OLS)':'(vaše přímka)')+(x>105||x<28?' · mimo rozsah dat, extrapolace':'');
+  extra.className='tip'+(x>105||x<28?' warn':'');s1._F=F;}
+const [b0i,b1i,px]=['b0','b1','px'].map(i=>document.getElementById(i));
+[b0i,b1i,px,showRes,showOls].forEach(e=>e.addEventListener('input',draw1));
+s1.addEventListener('click',e=>{const p=s1.createSVGPoint();p.x=e.clientX;p.y=e.clientY;const q=p.matrixTransform(s1.getScreenCTM().inverse());
+  if(q.x<M.l||q.x>W-M.r||q.y<M.t||q.y>H-M.b)return;const[x,y]=s1._F.inv(q.x,q.y);added.push([Math.round(x),Math.round(y*100)/100]);draw1();});
+snap.onclick=()=>{const f=fit1();b0i.value=f.beta[0];b1i.value=f.beta[1];draw1();};
+clearAdd.onclick=()=>{added=[];draw1();};
+
+/* ---------- Tab 2 ---------- */
+const s2=document.getElementById('s2');
+const dmin=Math.min(...DATA.map(d=>d.vzdalenost_km)),dmax=Math.max(...DATA.map(d=>d.vzdalenost_km));
+function model(preds){return ols(DATA.map(d=>[1,...preds.map(p=>d[p])]),yAll);}
+const NAMES={plocha_m2:'plocha (m²)',vzdalenost_km:'vzdálenost (km)',patro:'patro'};
+function draw2(){const preds=['plocha_m2'];if(m_d.checked)preds.push('vzdalenost_km');if(m_p.checked)preds.push('patro');
+  const f=model(preds),f1=model(['plocha_m2']),f2=model(['plocha_m2','vzdalenost_km']);
+  coef2.innerHTML='<tr><th>Člen</th><th>b</th></tr>'+['intercept',...preds].map((p,i)=>`<tr><td class="t">${i?NAMES[p]:'b0 (intercept)'}</td><td>${nf(f.beta[i],3)}</td></tr>`).join('');
+  fit2.innerHTML=`<span>R²</span><span>${nf(f.r2,4)}</span><span>upravené R²</span><span>${nf(f.adj,4)}</span>`;
+  const F=frame(s2,[20,115],[0,9],'plocha (m²)','cena (mil. Kč)');
+  F.line(f1.beta[0],f1.beta[1],'stroke:var(--muted);stroke-width:2;stroke-dasharray:6 5');
+  for(const dk of[1,6]){const b=f2.beta;F.line(b[0]+b[2]*dk,b[1],'stroke:var(--fit);stroke-width:2.2');
+    const t=el('text',{x:F.sx(108),y:F.sy(b[0]+b[2]*dk+b[1]*108)-6,'text-anchor':'end',style:'font:12px var(--mono);fill:var(--fit)'},F.plot);t.textContent=dk+' km';}
+  DATA.forEach(d=>{const p=Math.round((d.vzdalenost_km-dmin)/(dmax-dmin)*100);
+    el('circle',{cx:F.sx(d.plocha_m2),cy:F.sy(d.cena_mil),r:5,style:`fill:color-mix(in oklab, var(--far) ${p}%, var(--near));stroke:var(--panel);stroke-width:1`},F.plot);});
+  const x1=+cx1.value,x2=+cx2.value;cx1v.textContent=x1+' m²';cx2v.textContent=nf(x2,1)+' km';const b=f2.beta;
+  calc2.innerHTML=`ŷ = ${nf(b[0],3)} + ${nf(b[1],3)}·${x1} ${b[2]<0?'−':'+'} ${nf(Math.abs(b[2]),3)}·${nf(x2,1)}<br><span class="big">${nf(b[0]+b[1]*x1+b[2]*x2,2)} mil. Kč</span>`;}
+[m_d,m_p,cx1,cx2].forEach(e=>e.addEventListener('input',draw2));
+(function(){const ms=[['plocha',['plocha_m2']],['plocha + vzdálenost',['plocha_m2','vzdalenost_km']],['plocha + vzdálenost + patro',['plocha_m2','vzdalenost_km','patro']]];
+  cmp.innerHTML='<tr><th>Model</th><th>b plocha</th><th>b vzdálenost</th><th>b patro</th><th>R²</th><th>upr. R²</th></tr>'+ms.map(([n,p])=>{const f=model(p);
+    return `<tr><td class="t">${n}</td><td>${nf(f.beta[1],3)}</td><td>${p[1]?nf(f.beta[2],3):'–'}</td><td>${p[2]?nf(f.beta[3],3):'–'}</td><td>${nf(f.r2,4)}</td><td>${nf(f.adj,4)}</td></tr>`;}).join('');})();
+
+/* ---------- Tab 3 ---------- */
+const s3=document.getElementById('s3');const CATS=['centrum','sídliště','okraj'];const COL={centrum:'var(--c1)','sídliště':'var(--c2)',okraj:'var(--c3)'};
+const short=c=>c==='sídliště'?'sidliste':c;
+leg3.innerHTML=CATS.map(c=>`<span><i class="dot" style="background:${COL[c]}"></i>${c}</span>`).join('');
+function dummyFit(ref){const others=CATS.filter(c=>c!==ref);return{others,f:ols(DATA.map(d=>[1,d.plocha_m2,...others.map(c=>d.lokalita===c?1:0)]),yAll)};}
+function draw3(){const ref=document.getElementById('ref').value;const{others,f}=dummyFit(ref);const b=f.beta;
+  const F=frame(s3,[20,115],[0,9],'plocha (m²)','cena (mil. Kč)');
+  if(bad.checked){const code={centrum:1,'sídliště':2,okraj:3};const fb=ols(DATA.map(d=>[1,d.plocha_m2,code[d.lokalita]]),yAll);
+    CATS.forEach(c=>F.line(fb.beta[0]+fb.beta[2]*code[c],fb.beta[1],`stroke:${COL[c]};stroke-width:2.2;stroke-dasharray:7 5`));
+    coef3.innerHTML=`<tr><th>Člen</th><th>b</th></tr><tr><td class="t">b0 (intercept)</td><td>${nf(fb.beta[0],3)}</td></tr><tr><td class="t">plocha</td><td>${nf(fb.beta[1],3)}</td></tr><tr class="hi"><td class="t">lokalita (1/2/3)</td><td>${nf(fb.beta[2],3)}</td></tr><tr><td class="t">R²</td><td>${nf(fb.r2,3)}</td></tr>`;
+    interp3.innerHTML=`<li class="warn">Model vynutí stejný krok ${nf(fb.beta[2],2)} mil. Kč mezi centrem a sídlištěm i mezi sídlištěm a okrajem.</li><li>Se správnými dummy jsou kroky ${nf(dummyFit('centrum').f.beta[2],2)} a ${nf(dummyFit('centrum').f.beta[3]-dummyFit('centrum').f.beta[2],2)} mil. Kč. Pořadí kategorií u nominální proměnné navíc nic neznamená.</li>`;}
+  else{const ic={};ic[ref]=b[0];others.forEach((c,i)=>ic[c]=b[0]+b[2+i]);CATS.forEach(c=>F.line(ic[c],b[1],`stroke:${COL[c]};stroke-width:2.2`));
+    coef3.innerHTML='<tr><th>Člen</th><th>b</th></tr>'+`<tr><td class="t">b0 (= ${ref})</td><td>${nf(b[0],3)}</td></tr><tr><td class="t">plocha</td><td>${nf(b[1],3)}</td></tr>`+others.map((c,i)=>`<tr class="hi"><td class="t">D_${short(c)}</td><td>${nf(b[2+i],3)}</td></tr>`).join('')+`<tr><td class="t">R²</td><td>${nf(f.r2,3)}</td></tr>`;
+    interp3.innerHTML=others.map((c,i)=>`<li>Byt v lokalitě <b>${c}</b> je při stejné ploše o ${nf(Math.abs(b[2+i]),2)} mil. Kč ${b[2+i]<0?'levnější':'dražší'} než v lokalitě <b>${ref}</b>.</li>`).join('')+`<li>Intercept ${nf(b[0],2)} je přímka pro ${ref} v bodě 0 m².</li>`;}
+  DATA.forEach(d=>el('circle',{cx:F.sx(d.plocha_m2),cy:F.sy(d.cena_mil),r:4.8,style:`fill:${COL[d.lokalita]};stroke:var(--panel);stroke-width:1`},F.plot));
+  dum.innerHTML=`<tr><th>id</th><th>lokalita</th><th>plocha</th>${others.map(c=>`<th>D_${short(c)}</th>`).join('')}<th>cena</th></tr>`+DATA.slice(0,8).map(d=>`<tr><td>${d.id}</td><td class="t">${d.lokalita}</td><td>${d.plocha_m2}</td>${others.map(c=>`<td class="${d.lokalita===c?'hi':''}">${d.lokalita===c?1:0}</td>`).join('')}<td>${nf(d.cena_mil,2)}</td></tr>`).join('');}
+document.getElementById('ref').addEventListener('input',draw3);bad.addEventListener('input',draw3);
+
+/* ---------- Tab R²: decomposition ---------- */
+const s6=document.getElementById('s6');
+const SIMZ=(()=>{const R=rng(21);let a=Array.from({length:60},R.n),b=Array.from({length:60},R.n);
+  const st=v=>{const m=v.reduce((s,x)=>s+x,0)/v.length,sd=Math.sqrt(v.reduce((s,x)=>s+(x-m)**2,0)/(v.length-1));return v.map(x=>(x-m)/sd);};
+  a=st(a);b=st(b);const c=a.reduce((s,x,i)=>s+x*b[i],0)/(a.length-1);b=st(b.map((x,i)=>x-c*a[i]));return[a,b];})();
+const mean=v=>v.reduce((s,x)=>s+x,0)/v.length,sdev=v=>{const m=mean(v);return Math.sqrt(v.reduce((s,x)=>s+(x-m)**2,0)/(v.length-1));};
+const PX=DATA.map(d=>d.plocha_m2),PY=yAll;
+function draw6(){const sim=document.querySelector('input[name=src]:checked').value==='sim';rr.disabled=!sim;const r0=+rr.value;rrv.textContent=nf(r0,2);
+  let X,Y;if(sim){const mx=mean(PX),sx=sdev(PX),my=mean(PY),sy=sdev(PY);X=SIMZ[0].map(z=>mx+sx*z);Y=SIMZ[0].map((z,i)=>my+sy*(r0*z+Math.sqrt(1-r0*r0)*SIMZ[1][i]));}else{X=PX;Y=PY;}
+  if(zs.checked){const mx=mean(X),sx=sdev(X),my=mean(Y),sy=sdev(Y);X=X.map(x=>(x-mx)/sx);Y=Y.map(y=>(y-my)/sy);}
+  const f=ols(X.map(x=>[1,x]),Y),g=ols(Y.map(y=>[1,y]),X);const my=mean(Y),yh=X.map(x=>f.beta[0]+f.beta[1]*x);
+  const SST=Y.reduce((s,y)=>s+(y-my)**2,0),SSR=yh.reduce((s,v)=>s+(v-my)**2,0),SSE=SST-SSR;
+  const sxy=X.reduce((s,x,i)=>s+(x-mean(X))*(Y[i]-my),0),r=sxy/Math.sqrt(X.reduce((s,x)=>s+(x-mean(X))**2,0)*SST);
+  const F=zs.checked?frame(s6,[-3.5,3.5],[-3.5,3.5],'plocha (z-skór)','cena (z-skór)'):frame(s6,[10,125],[0,9.5],'plocha (m²)','cena (mil. Kč)');
+  const xl=zs.checked?[-3.5,3.5]:[10,125];
+  const dev=document.querySelector('input[name=dev]:checked').value;const DC={sst:'var(--muted)',ssr:'var(--fit)',sse:'var(--resid)'}[dev];
+  devleg.innerHTML=`<i style="background:${DC}"></i>odchylky (${dev.toUpperCase()})`;
+  X.forEach((x,i)=>{const[a,b]=dev==='sst'?[Y[i],my]:dev==='ssr'?[yh[i],my]:[Y[i],yh[i]];
+    el('line',{x1:F.sx(x),x2:F.sx(x),y1:F.sy(a),y2:F.sy(b),style:`stroke:${DC};stroke-width:1.3;opacity:.8`},F.plot);});
+  el('line',{x1:F.sx(xl[0]),x2:F.sx(xl[1]),y1:F.sy(my),y2:F.sy(my),style:'stroke:var(--muted);stroke-width:1.5;stroke-dasharray:6 5'},F.plot);
+  F.line(f.beta[0],f.beta[1],'stroke:var(--fit);stroke-width:2.5');
+  if(xy.checked&&Math.abs(g.beta[1])>1e-6)F.line(-g.beta[0]/g.beta[1],1/g.beta[1],'stroke:var(--you);stroke-width:2.5');
+  if(zs.checked)F.line(0,1,'stroke:var(--line);stroke-width:1');
+  X.forEach((x,i)=>el('circle',{cx:F.sx(x),cy:F.sy(Y[i]),r:4,style:'fill:var(--ink);fill-opacity:.6'},F.plot));
+  barR.style.width=(SSR/SST*100)+'%';barE.style.width=(SSE/SST*100)+'%';
+  st6.innerHTML=`<span>SST (celkem)</span><span>${nf(SST,2)}</span><span>SSR (vysvětleno)</span><span>${nf(SSR,2)}</span><span>SSE (rezidua)</span><span>${nf(SSE,2)}</span><span>R² = SSR / SST</span><span>${nf(SSR/SST,3)}</span><span>r · r</span><span>${nf(r*r,3)}</span>`;
+  sl6.innerHTML=`<span>r</span><span>${nf(r,3)}</span><span>sklon Y na X</span><span>${nf(f.beta[1],3)}</span>`+(xy.checked?`<span>sklon X na Y (v grafu)</span><span>${nf(1/g.beta[1],3)}</span>`:'')+(zs.checked?'':`<span>r · s<sub>y</sub> / s<sub>x</sub></span><span>${nf(r*sdev(Y)/sdev(X),3)}</span>`);}
+document.querySelectorAll('input[name=src],input[name=dev]').forEach(e=>e.addEventListener('input',draw6));[rr,zs,xy].forEach(e=>e.addEventListener('input',draw6));
+
+/* ---------- Tab 5: residuals ---------- */
+function rng(seed){let a=seed;const u=()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};
+  const n=()=>Math.sqrt(-2*Math.log(u()+1e-12))*Math.cos(2*Math.PI*u());return{u,n};}
+function probit(p){const a=[-39.6968302866538,220.946098424521,-275.928510446969,138.357751867269,-30.6647980661472,2.50662827745924],b=[-54.4760987982241,161.585836858041,-155.698979859887,66.8013118877197,-13.2805815529437],c=[-0.00778489400243029,-0.322396458041136,-2.40075827716184,-2.54973253934373,4.37466414146497,2.93816398269878],d=[0.00778469570904146,0.32246712907004,2.445134137143,3.75440866190742];
+  const pl=0.02425;let q,r;if(p<pl){q=Math.sqrt(-2*Math.log(p));return(((((c[0]*q+c[1])*q+c[2])*q+c[3])*q+c[4])*q+c[5])/((((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1);}
+  if(p>1-pl){q=Math.sqrt(-2*Math.log(1-p));return-(((((c[0]*q+c[1])*q+c[2])*q+c[3])*q+c[4])*q+c[5])/((((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1);}
+  q=p-.5;r=q*q;return(((((a[0]*r+a[1])*r+a[2])*r+a[3])*r+a[4])*r+a[5])*q/(((((b[0]*r+b[1])*r+b[2])*r+b[3])*r+b[4])*r+1);}
+const SCEN=(()=>{const base=DATA.map(d=>[d.plocha_m2,d.cena_mil]);const mk=(seed,f)=>{const R=rng(seed);return Array.from({length:70},()=>{const x=30+R.u()*75;return[x,f(x,R)];});};
+  return{byty:{pts:base,txt:'Bez zjevného problému. Rezidua jsou rozházená kolem nuly bez vzoru, rozptyl je zhruba stejný a Q-Q graf drží diagonálu.'},
+    nl:{pts:mk(11,(x,R)=>0.6+0.12*x-0.00062*x*x+R.n()*0.22),txt:'<b>Nelinearita.</b> V grafu reziduí vs. ŷ je oblouk: uprostřed jsou rezidua kladná, na krajích záporná. Přímka nemá správný tvar, přestože R² je vysoké.'},
+    het:{pts:mk(12,(x,R)=>0.3+0.06*x+R.n()*0.0095*x),txt:'<b>Heteroskedasticita.</b> Rezidua tvoří trychtýř: u dražších bytů je rozptyl mnohem větší. Koeficienty jsou v pořádku, ale p-hodnoty a intervaly spolehlivosti už nejsou spolehlivé.'},
+    skew:{pts:mk(13,(x,R)=>0.3+0.06*x+(-Math.log(1-R.u()+1e-12)-1)*0.6),txt:'<b>Nenormální rezidua.</b> Histogram je šikmý doprava (pár bytů výrazně dražších, než model čeká), Q-Q graf se na pravém konci zvedá nad diagonálu.'},
+    out:{pts:base.concat([[104,1.6]]),txt:'<b>Odlehlá hodnota s velkou pákou.</b> Jeden velký levný byt (chyba v zadání? havarijní stav?) stáhne přímku dolů a sníží R². V grafu reziduí i v Q-Q je úplně mimo.'}};})();
+function drawRes(){const key=document.querySelector('input[name=sc]:checked').value,S=SCEN[key],pts=S.pts;
+  const row=x=>sq.checked?[1,x-65,(x-65)**2]:[1,x-65];const f=ols(pts.map(p=>row(p[0])),pts.map(p=>p[1]));
+  const pr=x=>row(x).reduce((s,v,j)=>s+v*f.beta[j],0);const fit=pts.map(p=>pr(p[0])),res=pts.map((p,i)=>p[1]-fit[i]);
+  const sd=Math.sqrt(res.reduce((s,v)=>s+v*v,0)/(res.length-2)),z=res.map(v=>v/sd);
+  const ext=key==='out'?pts.length-1:-1;const dot=(i)=>i===ext?'fill:var(--added);stroke:var(--panel);stroke-width:1.5':'fill:var(--ink);fill-opacity:.55';
+  const ymax=Math.max(9,...pts.map(p=>p[1]));
+  let F=frame(r1,[20,115],[0,Math.ceil(ymax)],'plocha (m²)','cena (mil. Kč)',320,250,4);
+  {let d='';for(let x=20;x<=115;x+=1)d+=(x===20?'M':'L')+F.sx(x).toFixed(1)+' '+F.sy(pr(x)).toFixed(1);el('path',{d,style:'fill:none;stroke:var(--fit);stroke-width:2'},F.plot);}
+  pts.forEach((p,i)=>el('circle',{cx:F.sx(p[0]),cy:F.sy(p[1]),r:i===ext?5:3,style:dot(i)},F.plot));
+  const rl=Math.max(2.5,Math.ceil(Math.max(...res.map(Math.abs))*2)/2),fl=[Math.floor(Math.min(...fit)),Math.ceil(Math.max(...fit))];
+  F=frame(r2,fl,[-rl,rl],'predikce ŷ','reziduum',320,250,4);
+  el('line',{x1:F.sx(fl[0]),x2:F.sx(fl[1]),y1:F.sy(0),y2:F.sy(0),style:'stroke:var(--fit);stroke-width:1.5;stroke-dasharray:4 4'},F.plot);
+  res.forEach((r,i)=>el('circle',{cx:F.sx(fit[i]),cy:F.sy(r),r:i===ext?5:3,style:dot(i)},F.plot));
+  const bins=Array(16).fill(0);z.forEach(v=>{const b=Math.min(15,Math.max(0,Math.floor((v+4)/0.5)));bins[b]++;});const hm=Math.max(...bins);
+  F=frame(r3,[-4,4],[0,Math.ceil(hm/5)*5],'standardizované reziduum','počet',320,250,4);
+  bins.forEach((c,b)=>{if(!c)return;const x0=-4+b*0.5;el('rect',{x:F.sx(x0)+1,y:F.sy(c),width:F.sx(x0+0.5)-F.sx(x0)-2,height:F.sy(0)-F.sy(c),style:'fill:var(--fit);fill-opacity:.75'},F.plot);});
+  const n=z.length,zs=z.map((v,i)=>[v,i]).sort((a,b)=>a[0]-b[0]);const lim=Math.max(3,Math.ceil(Math.max(...z.map(Math.abs))));
+  F=frame(r4,[-3,3],[-lim,lim],'teoretický kvantil','pozorovaný kvantil',320,250,4);
+  F.line(0,1,'stroke:var(--fit);stroke-width:1.5');
+  zs.forEach(([v,i],k)=>el('circle',{cx:F.sx(probit((k+.5)/n)),cy:F.sy(v),r:i===ext?5:3,style:dot(i)},F.plot));
+  rstat.innerHTML=`<span>model</span><span>${sq.checked?'b0 + b1·x + b2·x²':'b0 + b1·x'}</span><span>R²</span><span>${nf(f.r2,2)}</span><span>počet bodů</span><span>${n}</span>`;
+  look.hidden=!reveal.checked;look.innerHTML=S.txt+(sq.checked&&key==='nl'?' Po přidání x² oblouk zmizel: model má teď správný tvar.':'');}
+document.querySelectorAll('input[name=sc]').forEach(e=>e.addEventListener('input',drawRes));sq.addEventListener('input',drawRes);reveal.addEventListener('input',drawRes);
+
+/* ---------- Exercise numbers ---------- */
+(function(){const m1=model(['plocha_m2']),m2=model(['plocha_m2','vzdalenost_km']),m3=model(['plocha_m2','vzdalenost_km','patro']),d=dummyFit('centrum').f;
+  const pl=DATA.map(x=>x.plocha_m2),dk=DATA.map(x=>x.vzdalenost_km),mp=pl.reduce((a,b)=>a+b)/N,md=dk.reduce((a,b)=>a+b)/N;let a=0,b=0,c=0;for(let i=0;i<N;i++){a+=(pl[i]-mp)*(dk[i]-md);b+=(pl[i]-mp)**2;c+=(dk[i]-md)**2;}
+  const K=x=>(Math.round(Math.abs(x)*1e6/100)*100).toLocaleString('cs-CZ');
+  const V={'sse1':nf(m1.sse,2),'m1.b0':nf(m1.beta[0],3),'m1.b1':nf(m1.beta[1],3),'m1.b1kc':K(m1.beta[1]),'pred70':nf(m1.beta[0]+70*m1.beta[1],2),'pred200':nf(m1.beta[0]+200*m1.beta[1],2),
+    'm2.b0':nf(m2.beta[0],3),'m2.b1':nf(m2.beta[1],3),'m2.b2':nf(m2.beta[2],3),'m2.b1kc':K(m2.beta[1]),'m2.b2kc':K(m2.beta[2]),'pred602':nf(m2.beta[0]+60*m2.beta[1]+2*m2.beta[2],2),
+    'm2.r2':nf(m2.r2,3),'m2.adj':nf(m2.adj,3),'m2.r2pct':Math.round(m2.r2*100),'m3.r2':nf(m3.r2,3),'m2.r24':nf(m2.r2,4),'m3.r24':nf(m3.r2,4),'m3.adj':nf(m3.adj,3),'rpd':nf(a/Math.sqrt(b*c),2),
+    'd.b0':nf(d.beta[0],3),'d.b1':nf(d.beta[1],3),'d.s':nf(Math.abs(d.beta[2]),2),'d.o':nf(Math.abs(d.beta[3]),2),'d.os':nf(Math.abs(d.beta[3]-d.beta[2]),2),'nl.r2':nf(ols(SCEN.nl.pts.map(p=>[1,p[0]]),SCEN.nl.pts.map(p=>p[1])).r2,2),'nl.r2q':nf(ols(SCEN.nl.pts.map(p=>[1,p[0]-65,(p[0]-65)**2]),SCEN.nl.pts.map(p=>p[1])).r2,2),
+    'dec.sst':nf(m1.r2>0?(yAll.reduce((s,y)=>s+(y-mean(yAll))**2,0)):0,1),'dec.sse':nf(m1.sse,1),'dec.ssr':nf(yAll.reduce((s,y)=>s+(y-mean(yAll))**2,0)-m1.sse,1),'dec.r2':nf(m1.r2,2),'dec.pct':Math.round(m1.r2*100),'dec.r':nf(Math.sqrt(m1.r2),2)};
+  document.querySelectorAll('[data-v]').forEach(e=>e.textContent=V[e.dataset.v]);})();
+
+/* ---------- Tabs ---------- */
+const tabs=[...document.querySelectorAll('nav button')];const PANES=['p1','p6','p2','p3','p5','p4'];
+function show(id){tabs.forEach(t=>t.setAttribute('aria-selected',t.dataset.tab===id));PANES.forEach(p=>document.getElementById(p).hidden=p!==id);try{localStorage.setItem('regtab',id)}catch(e){}}
+tabs.forEach(t=>t.onclick=()=>show(t.dataset.tab));
+const h=location.hash.slice(1);let start='p1';try{start=localStorage.getItem('regtab')||'p1'}catch(e){}if(PANES.includes(h))start=h;if(!PANES.includes(start))start='p1';
+draw1();draw6();draw2();draw3();drawRes();show(start);
+</script>
+
+</body></html>

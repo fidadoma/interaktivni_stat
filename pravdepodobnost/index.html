@@ -1,0 +1,635 @@
+<!doctype html><html lang="cs"><head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Pravděpodobnost v pokusech</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: same system as "Regrese na bytech" and "Kontingenční tabulky" — one column, tabbed labs, plot left + controls right */
+:root{
+  --bg:#f6f7f9; --panel:#ffffff; --ink:#18212b; --muted:#5b6773; --line:#d9dee4;
+  --fit:#1f5fa8; --you:#d0661c; --warn:#c2410c; --soft:#eaf0f7; --ok:#2a8f6a; --bad:#b4233a; --fp:#d99a3c; --tn:#dfe5ec;
+  --onk:#ffffff;
+  --display:"Bricolage Grotesque",ui-sans-serif,system-ui,sans-serif;
+  --body:"Instrument Sans",ui-sans-serif,system-ui,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#12171d; --panel:#1a2129; --ink:#e6ebf0; --muted:#9aa6b2; --line:#2e3843;
+  --fit:#6aa7ec; --you:#f0954f; --warn:#f08a52; --soft:#1f2a36; --ok:#4fb88f; --bad:#e2607a; --fp:#d9a24a; --tn:#2a3440;
+  --onk:#0f141a; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#12171d; --panel:#1a2129; --ink:#e6ebf0; --muted:#9aa6b2; --line:#2e3843;
+  --fit:#6aa7ec; --you:#f0954f; --warn:#f08a52; --soft:#1f2a36; --ok:#4fb88f; --bad:#e2607a; --fp:#d9a24a; --tn:#2a3440;
+  --onk:#0f141a; color-scheme:dark}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+#bppv{font-size:18px;overflow-wrap:anywhere}
+#bform{white-space:normal;overflow-wrap:anywhere}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.55;padding-inline:16px;padding-block:24px 48px}
+.wrap{max-width:1080px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
+header h1{font-family:var(--display);font-size:clamp(26px,4vw,38px);line-height:1.1;margin:0;text-wrap:balance}
+header p{margin:6px 0 0;color:var(--muted);max-width:70ch}
+.eq{font-family:var(--mono);font-size:13.5px}
+nav{display:flex;flex-wrap:wrap;gap:6px;border-bottom:1px solid var(--line)}
+nav button{font:500 14px var(--body);color:var(--muted);background:none;border:none;border-bottom:2px solid transparent;padding:8px 12px;cursor:pointer;margin-bottom:-1px}
+nav button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--fit)}
+button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible{outline:2px solid var(--fit);outline-offset:2px}
+section{display:flex;flex-direction:column;gap:16px}
+h2{font-family:var(--display);font-size:22px;margin:0;text-wrap:balance}
+h3{font-size:15px;margin:0;font-weight:600}
+.lead{margin:0;color:var(--muted);max-width:72ch}
+.lab{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:820px){.lab{grid-template-columns:1fr}}
+.col{display:flex;flex-direction:column;gap:14px;min-width:0}
+.plot{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:8px;min-width:0}
+.plot svg,.plot canvas{width:100%;height:auto;display:block}
+.box{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:12px 14px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.chk{display:flex;gap:8px;align-items:center;font-size:14px;cursor:pointer}
+.stats{display:grid;grid-template-columns:1fr auto;gap:4px 12px;font-size:14px}
+.stats span:nth-child(even){font-family:var(--mono);font-variant-numeric:tabular-nums;text-align:right}
+.big{font-family:var(--mono);font-size:22px;font-variant-numeric:tabular-nums}
+.btns{display:flex;flex-wrap:wrap;gap:8px}
+button.b{font:500 13px var(--body);background:var(--soft);color:var(--ink);border:1px solid var(--line);border-radius:4px;padding:6px 10px;cursor:pointer}
+button.b:hover{border-color:var(--fit)}
+button.b:disabled{opacity:.45;cursor:default}
+.legend{display:flex;flex-wrap:wrap;gap:12px;font-size:13px;color:var(--muted);padding:4px 6px 0}
+.legend i{display:inline-block;width:11px;height:11px;vertical-align:-1px;margin-right:5px;border-radius:2px}
+.legend i.ln{height:3px;width:18px;vertical-align:middle}
+.tip{font-size:13.5px;color:var(--muted);border-left:2px solid var(--line);padding-left:10px;margin:0}
+.say{font-size:15px;margin:0;border-left:3px solid var(--you);padding:2px 0 2px 10px}
+.tablewrap{overflow-x:auto}
+table{border-collapse:collapse;font-size:13.5px;width:100%}
+th,td{padding:5px 8px;border-bottom:1px solid var(--line);text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+th{font-weight:600;color:var(--muted);font-size:12.5px}
+th:first-child,td:first-child{text-align:left}
+td{font-family:var(--mono);font-size:13px}
+td.t{font-family:var(--body);font-size:13.5px}
+tr.tot td,tr.tot th{font-weight:600;border-top:1px solid var(--muted)}
+table input{font:13px var(--mono);width:6.5em;text-align:right;padding:3px 5px;border:1px solid var(--line);border-radius:3px;background:var(--panel);color:var(--ink)}
+select{font:14px var(--body);padding:4px 6px;border:1px solid var(--line);border-radius:4px;background:var(--panel);color:var(--ink);max-width:100%}
+input.nm{font:14px var(--body);padding:3px 6px;border:1px solid var(--line);border-radius:4px;background:var(--panel);color:var(--ink);width:100%}
+label.rng{display:grid;grid-template-columns:minmax(4.5em,auto) 1fr auto;gap:10px;align-items:center;font-size:14px}
+label.rng input{width:100%;accent-color:var(--you)}
+.val{font-family:var(--mono);font-size:13px;font-variant-numeric:tabular-nums;min-width:5ch;text-align:right}
+.code{font-family:var(--mono);font-size:13px;background:var(--soft);border:1px solid var(--line);border-radius:4px;padding:6px 8px;overflow-x:auto;white-space:nowrap;user-select:all}
+.pill{display:inline-block;font:600 12px var(--body);letter-spacing:.04em;padding:2px 8px;border-radius:99px;background:var(--soft);border:1px solid var(--line)}
+.ctx{font-size:14.5px;margin:0}
+ol.ex{margin:0;padding-left:0;list-style:none;counter-reset:ex;display:flex;flex-direction:column;gap:12px;max-width:80ch}
+ol.ex>li{counter-increment:ex;background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:12px 14px 12px 48px;position:relative}
+ol.ex>li::before{content:counter(ex);position:absolute;left:14px;top:11px;font-family:var(--display);font-weight:700;font-size:18px;color:var(--fit)}
+ol.ex .tag{font-size:11.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-left:6px;font-weight:500}
+ol.ex p{margin:4px 0}
+details{margin-top:6px}
+summary{cursor:pointer;color:var(--fit);font-size:14px;font-weight:500}
+details>div{margin-top:6px;font-size:14px;border-left:2px solid var(--fit);padding-left:10px}
+svg text{font-family:var(--body)}
+.ax{font:11px var(--mono);fill:var(--muted)}
+.al{font-size:12px;fill:var(--muted)}
+.gl{stroke:var(--line);stroke-width:1}
+.base{stroke:var(--muted);stroke-width:1}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="wrap">
+<header>
+  <h1>Pravděpodobnost v pokusech</h1>
+  <p>Pět simulací k přednášce o pravděpodobnosti: od pokusu k modelu, podmíněná pravděpodobnost a Bayesova věta, střední hodnota, základní rozdělení a centrální limitní věta. Všechny příklady jsou smyšlené.</p>
+</header>
+
+<nav role="tablist">
+  <button role="tab" aria-selected="true" data-tab="p1">1 · Galtonova deska</button>
+  <button role="tab" aria-selected="false" data-tab="p2">2 · Podmíněná pst a Bayes</button>
+  <button role="tab" aria-selected="false" data-tab="p3">3 · Střední hodnota</button>
+  <button role="tab" aria-selected="false" data-tab="p4">4 · Rozdělení</button>
+  <button role="tab" aria-selected="false" data-tab="p5">5 · Centrální limitní věta</button>
+  <button role="tab" aria-selected="false" data-tab="p6">Cvičení</button>
+</nav>
+
+<!-- TAB 1 GALTON -->
+<section id="p1">
+  <div><h2>Model a vzorek: Galtonova deska</h2>
+  <p class="lead">Každá kulička se na každém kolíku odrazí doprava s pravděpodobností π. Přihrádka, do které spadne, je počet odrazů doprava, tedy hodnota binomického rozdělení Bi(n, π). Deska je model, kuličky dole jsou vzorek. Čím víc kuliček, tím víc se vzorek podobá modelu.</p></div>
+  <div class="lab">
+    <div class="plot"><canvas id="gc" width="1280" height="900" aria-label="Galtonova deska s padajícími kuličkami"></canvas>
+      <div class="legend"><span><i style="background:var(--fit)"></i>pozorované četnosti</span><span><i class="ln" style="background:var(--you)"></i>očekávané podle Bi(n, π)</span><span id="gNormLeg" hidden><i class="ln" style="background:var(--ok)"></i>normální rozdělení</span></div>
+    </div>
+    <div class="col">
+      <div class="box">
+        <label class="rng" for="gn">řady n<input type="range" id="gn" min="4" max="20" step="1" value="12"><span class="val" id="gnv"></span></label>
+        <label class="rng" for="gp">π doprava<input type="range" id="gp" min="0.1" max="0.9" step="0.05" value="0.5"><span class="val" id="gpv"></span></label>
+        <div class="btns"><button class="b" id="g1">Pustit 1</button><button class="b" id="g100">Pustit 100</button><button class="b" id="g1000">Přidat 1000 naráz</button><button class="b" id="g0">Vynulovat</button></div>
+        <label class="chk"><input type="checkbox" id="gExp" checked> Ukázat očekávané četnosti</label>
+        <label class="chk"><input type="checkbox" id="gNorm"> Proložit normálním rozdělením</label>
+      </div>
+      <div class="box">
+        <h3>Vzorek vs. model</h3>
+        <div class="stats" id="gst"></div>
+        <p class="tip">Změna n nebo π desku vyprázdní. Zkuste π = 0,8: rozdělení se zešikmí, ale při velkém n se zase blíží normálnímu.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TAB 2 BAYES -->
+<section id="p2" hidden>
+  <div><h2>Kolik poplachů je opravdu podvod?</h2>
+  <p class="lead">Banka má systém, který hlídá podvodné platby kartou. Jeden čtvereček je jedna platba. Nastavte, jak často se podvod vyskytuje a jak dobrý je systém. Pak porovnejte P(poplach | podvod) a P(podvod | poplach). Nejsou to stejná čísla.</p></div>
+  <div class="lab">
+    <div class="col">
+      <div class="plot"><svg id="bg" viewBox="0 0 640 268" role="img" aria-label="Mřížka 1000 plateb rozdělených podle podvodu a poplachu"></svg>
+        <div class="legend"><span><i style="background:var(--bad)"></i>podvod, poplach</span><span><i style="background:var(--ok)"></i>podvod, bez poplachu</span><span><i style="background:var(--fp)"></i>v pořádku, falešný poplach</span><span><i style="background:var(--tn)"></i>v pořádku, bez poplachu</span></div>
+      </div>
+      <div class="box">
+        <h3>Tabulka očekávaných počtů (na <span id="bN"></span> plateb)</h3>
+        <div class="tablewrap"><table id="bt"></table></div>
+        <p class="tip">Je to kontingenční tabulka. P(poplach | podvod) je řádkové procento v řádku „podvod“, P(podvod | poplach) je sloupcové procento ve sloupci „poplach“.</p>
+      </div>
+    </div>
+    <div class="col">
+      <div class="box">
+        <label class="rng" for="bprev">podíl podvodů<input type="range" id="bprev" min="0" max="12" step="1" value="4"><span class="val" id="bprevv"></span></label>
+        <label class="rng" for="bsens">citlivost<input type="range" id="bsens" min="0.5" max="0.995" step="0.005" value="0.9"><span class="val" id="bsensv"></span></label>
+        <label class="rng" for="bspec">specificita<input type="range" id="bspec" min="0.8" max="0.999" step="0.001" value="0.95"><span class="val" id="bspecv"></span></label>
+        <p class="tip">Citlivost = P(poplach | podvod). Specificita = P(bez poplachu | v pořádku).</p>
+      </div>
+      <div class="box">
+        <div class="stats" id="bst"></div>
+        <div><span class="big" id="bppv"></span></div>
+        <p class="say" id="bsay"></p>
+        <div class="btns"><button class="b" id="b2">Druhá nezávislá kontrola</button><button class="b" id="bres">Zpět na výchozí</button></div>
+        <p class="tip" id="b2tip">Platba s poplachem projde druhou, nezávislou kontrolou. Aposteriorní pravděpodobnost z první kontroly se stane apriorní pro druhou.</p>
+      </div>
+      <div class="box">
+        <h3>Bayesova věta s vašimi čísly</h3>
+        <div class="code" id="bform"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TAB 3 EXPECTED VALUE -->
+<section id="p3" hidden>
+  <div><h2>Střední hodnota a zákon velkých čísel</h2>
+  <p class="lead">Střední hodnota E(X) je průměrný výsledek, ke kterému se blíží průměr z mnoha opakování. Hrajte s oběma variantami najednou a sledujte, jak se průběžný průměr ustálí na E(X). Rozptyl říká, jak moc se jednotlivé výsledky liší.</p></div>
+  <div class="lab">
+    <div class="plot"><svg id="es" viewBox="0 0 640 380" role="img" aria-label="Průběžný průměr výhry pro dvě varianty"></svg>
+      <div class="legend"><span><i class="ln" style="background:var(--fit)"></i><span id="elA"></span>: průběžný průměr</span><span><i class="ln" style="background:var(--you)"></i><span id="elB"></span>: průběžný průměr</span><span>čárkovaně E(X)</span></div>
+    </div>
+    <div class="col">
+      <div class="box">
+        <label for="epre" class="chk" style="cursor:default">Příklad <select id="epre">
+          <option value="s32">Dva automaty (slide 32)</option>
+          <option value="s37">Automat a jeho desetina (slide 37)</option>
+          <option value="poj">Pojistit dům, nebo ne</option>
+        </select></label>
+        <p class="ctx" id="ectx"></p>
+        <div class="btns"><button class="b" data-play="1">Hrát 1×</button><button class="b" data-play="10">10×</button><button class="b" data-play="100">100×</button><button class="b" data-play="1000">1000×</button><button class="b" id="e0">Vynulovat</button></div>
+        <div class="stats" id="elast"></div>
+      </div>
+    </div>
+  </div>
+  <div class="lab">
+    <div class="box"><input class="nm" id="enA" aria-label="Název varianty A"><div class="tablewrap"><table id="etA"></table></div><div class="stats" id="esA"></div></div>
+    <div class="box"><input class="nm" id="enB" aria-label="Název varianty B"><div class="tablewrap"><table id="etB"></table></div><div class="stats" id="esB"></div></div>
+  </div>
+  <p class="tip">E(X) = Σ xᵢ·pᵢ. D(X) = Σ xᵢ²·pᵢ − E(X)². σ = √D(X). Pravděpodobnosti v každé tabulce musí dát součet 1.</p>
+</section>
+
+<!-- TAB 4 DISTRIBUTIONS -->
+<section id="p4" hidden>
+  <div><h2>Pravděpodobnostní modely</h2>
+  <p class="lead">Vyberte rozdělení, nastavte parametry a otázku. Graf zvýrazní, které hodnoty do otázky patří. Pod grafem je vzorec pro Excel, kterým výsledek ověříte.</p></div>
+  <div class="lab">
+    <div class="col">
+      <div class="plot"><svg id="ds" viewBox="0 0 640 360" role="img" aria-label="Graf zvoleného rozdělení"></svg>
+        <div class="legend" id="dleg"></div>
+      </div>
+      <div class="box">
+        <div><span class="big" id="dprob"></span></div>
+        <div class="code" id="dxl"></div>
+        <p class="tip" id="dxtip"></p>
+      </div>
+    </div>
+    <div class="col">
+      <div class="box">
+        <label for="dsel" class="chk" style="cursor:default">Rozdělení <select id="dsel">
+          <option value="alt">Alternativní</option>
+          <option value="bin" selected>Binomické</option>
+          <option value="hyp">Hypergeometrické</option>
+          <option value="poi">Poissonovo</option>
+          <option value="uni">Rovnoměrné (spojité)</option>
+          <option value="nor">Normální</option>
+        </select></label>
+        <p class="ctx" id="dctx"></p>
+        <div id="dpar" class="col" style="gap:8px"></div>
+      </div>
+      <div class="box">
+        <label for="dq" class="chk" style="cursor:default">Otázka <select id="dq"></select></label>
+        <div id="dqk" class="col" style="gap:8px"></div>
+        <label class="chk"><input type="checkbox" id="dcdf"> Ukázat distribuční funkci F(x)</label>
+        <label class="chk" id="dnormL"><input type="checkbox" id="dnorm"> Proložit normální aproximací</label>
+      </div>
+      <div class="box"><div class="stats" id="dst"></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- TAB 5 CLT -->
+<section id="p5" hidden>
+  <div><h2>Průměry ze vzorků</h2>
+  <p class="lead">Nahoře je populace. Z ní opakovaně losujeme vzorky o velikosti n a z každého spočítáme průměr. Dole je histogram těchto průměrů. Při dost velkém n vypadá jako normální rozdělení, i když populace normální není. Zároveň se zužuje: směrodatná odchylka průměru je σ/√n.</p></div>
+  <div class="lab">
+    <div class="col">
+      <div class="plot"><svg id="cp" viewBox="0 0 640 200" role="img" aria-label="Rozdělení populace a poslední vzorek"></svg></div>
+      <div class="plot"><svg id="cm" viewBox="0 0 640 240" role="img" aria-label="Histogram výběrových průměrů"></svg>
+        <div class="legend"><span><i style="background:var(--fit)"></i>průměry vzorků</span><span><i class="ln" style="background:var(--you)"></i>N(μ, σ²/n)</span><span><i class="ln" style="background:var(--ok)"></i>poslední vzorek a jeho průměr</span></div>
+      </div>
+    </div>
+    <div class="col">
+      <div class="box">
+        <label for="cpop" class="chk" style="cursor:default">Populace <select id="cpop">
+          <option value="exp">Útrata zákazníka e-shopu (Kč)</option>
+          <option value="star">Hodnocení produktu (1–5 hvězd)</option>
+          <option value="uni">Čekání na tramvaj (min)</option>
+          <option value="die">Hod kostkou</option>
+        </select></label>
+        <label class="rng" for="cn">velikost n<input type="range" id="cn" min="1" max="100" step="1" value="5"><span class="val" id="cnv"></span></label>
+        <div class="btns"><button class="b" data-cs="1">1 vzorek</button><button class="b" data-cs="100">100 vzorků</button><button class="b" data-cs="1000">1000 vzorků</button><button class="b" id="c0">Vynulovat</button></div>
+      </div>
+      <div class="box"><div class="stats" id="cst"></div>
+        <p class="tip">Změna n nebo populace histogram průměrů vynuluje. Porovnejte n = 1, 4, 16 a 64: každé zčtyřnásobení n zúží rozdělení průměrů na polovinu.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- EXERCISES -->
+<section id="p6" hidden>
+  <div><h2>Cvičení do přednášky</h2>
+  <p class="lead">Všechny úlohy se dají vyřešit nebo ověřit na této stránce. Čísla v řešeních počítá stránka stejnými funkcemi jako grafy.</p></div>
+  <ol class="ex" id="ex"></ol>
+</section>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+const fx=(x,d=2)=>(x<0?'−':'')+Math.abs(x).toFixed(d).replace('.',',');
+const pc=(x,d=1)=>fx(100*x,d)+' %';
+const xl=x=>String(+x.toFixed(4)).replace('.',',');
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const kc=x=>(x>0?'+':x<0?'−':'')+Math.abs(Math.round(x)).toLocaleString('cs-CZ')+' Kč';
+const kc2=x=>(x>0?'+':x<0?'−':'')+fx(Math.abs(x),2)+' Kč';
+
+/* ---------- math ---------- */
+const LF=[0];for(let i=1;i<=2000;i++)LF[i]=LF[i-1]+Math.log(i);
+const lC=(n,k)=>(k<0||k>n)?-Infinity:LF[n]-LF[k]-LF[n-k];
+const binP=(k,n,p)=>k<0||k>n?0:p===0?(k===0?1:0):p===1?(k===n?1:0):Math.exp(lC(n,k)+k*Math.log(p)+(n-k)*Math.log(1-p));
+const hypP=(k,N,K,n)=>{const v=lC(K,k)+lC(N-K,n-k)-lC(N,n);return isFinite(v)?Math.exp(v):0};
+const poiP=(k,l)=>k<0?0:Math.exp(-l+k*Math.log(l)-LF[k]);
+const erf=x=>{const t=1/(1+.3275911*Math.abs(x)),y=1-(((((1.061405429*t-1.453152027)*t)+1.421413741)*t-.284496736)*t+.254829592)*t*Math.exp(-x*x);return x>=0?y:-y};
+const nCdf=(x,m,s)=>.5*(1+erf((x-m)/(s*Math.SQRT2)));
+const nPdf=(x,m,s)=>Math.exp(-.5*((x-m)/s)**2)/(s*Math.sqrt(2*Math.PI));
+const niceStep=(r,c=5)=>{const s=r/c,m=Math.pow(10,Math.floor(Math.log10(s))),f=s/m;return (f<1.5?1:f<3?2:f<7?5:10)*m};
+const ticks=(a,b,c=5)=>{const s=niceStep(b-a,c),o=[];for(let v=Math.ceil(a/s-1e-9)*s;v<=b+1e-9;v+=s)o.push(+v.toFixed(10));return o};
+const tf=v=>Math.abs(v)>=1000?Math.round(v).toLocaleString('cs-CZ'):String(+v.toFixed(3)).replace('.',',');
+
+/* ---------- SVG helpers ---------- */
+const R=(x,y,w,h,f,ex='')=>`<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${Math.max(0,w).toFixed(1)}" height="${Math.max(0,h).toFixed(1)}" fill="${f}" ${ex}/>`;
+const T=(x,y,s,cl,ex='')=>`<text x="${x.toFixed(1)}" y="${y.toFixed(1)}" class="${cl}" ${ex}>${s}</text>`;
+const Ln=(x1,y1,x2,y2,st,ex='')=>`<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" stroke="${st}" ${ex}/>`;
+function frame(o){const{W,H,L,Tp,Rt,B,x0,x1,y0,y1}=o,pw=W-L-Rt,ph=H-Tp-B;
+  const X=v=>L+pw*(v-x0)/(x1-x0),Y=v=>Tp+ph-ph*(v-y0)/(y1-y0);let g='';
+  (o.yt||ticks(y0,y1,4)).forEach(v=>{g+=Ln(L,Y(v),W-Rt,Y(v),'var(--line)')+T(L-6,Y(v)+4,(o.yf||tf)(v),'ax','text-anchor="end"')});
+  (o.xt||ticks(x0,x1,6)).forEach(v=>{g+=T(X(v),H-B+16,(o.xf||tf)(v),'ax','text-anchor="middle"')});
+  g+=Ln(L,Tp+ph,W-Rt,Tp+ph,'var(--muted)');
+  if(o.xl)g+=T(L+pw/2,H-4,o.xl,'al','text-anchor="middle"');
+  if(o.yl)g+=T(12,Tp+ph/2,o.yl,'al',`text-anchor="middle" transform="rotate(-90 12 ${Tp+ph/2})"`);
+  return{X,Y,g,pw,ph}}
+const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+
+/* =========================================================
+   TAB 1 — GALTON
+   ========================================================= */
+const G={n:12,p:.5,bins:[],balls:[],queue:0,total:0,sum:0,sum2:0,raf:0};
+const gc=$('gc'),gx=gc.getContext('2d');
+function gReset(){G.bins=Array(G.n+1).fill(0);G.balls=[];G.queue=0;G.total=0;G.sum=0;G.sum2=0;gStats();gDraw()}
+function gPath(){const d=[];for(let i=0;i<G.n;i++)d.push(Math.random()<G.p?1:0);return d}
+function gLand(k){G.bins[k]++;G.total++;G.sum+=k;G.sum2+=k*k}
+function gGeom(){const W=640,H=450,cx=W/2,dx=Math.min(26,560/(G.n+1)),y0=22,pegH=210,dy=pegH/G.n,binTop=y0+pegH+18,binBot=H-26;return{W,H,cx,dx,y0,dy,binTop,binBot}}
+function gDraw(){
+  const s=2,g=gGeom(),c=gx;c.setTransform(s,0,0,s,0,0);c.clearRect(0,0,g.W,g.H);
+  const cl={peg:css('--muted'),ball:css('--you'),bar:css('--fit'),exp:css('--you'),ok:css('--ok'),line:css('--line'),txt:css('--muted'),ink:css('--ink')};
+  c.fillStyle=cl.peg;
+  for(let r=0;r<G.n;r++)for(let j=0;j<=r;j++){c.beginPath();c.arc(g.cx+(j-r/2)*g.dx,g.y0+(r+.5)*g.dy,2.2,0,7);c.fill()}
+  const mexp=Math.max(...G.bins.map((_,k)=>binP(k,G.n,G.p)))*Math.max(G.total,1),mx=Math.max(1,...G.bins,G.total?mexp:0),bh=g.binBot-g.binTop,bw=g.dx*.8;
+  c.strokeStyle=cl.line;c.lineWidth=1;
+  for(let k=0;k<=G.n+1;k++){const x=g.cx+(k-.5-G.n/2)*g.dx;c.beginPath();c.moveTo(x,g.binTop);c.lineTo(x,g.binBot);c.stroke()}
+  c.beginPath();c.moveTo(g.cx-(G.n/2+.5)*g.dx,g.binBot);c.lineTo(g.cx+(G.n/2+.5)*g.dx,g.binBot);c.strokeStyle=cl.txt;c.stroke();
+  G.bins.forEach((v,k)=>{const x=g.cx+(k-G.n/2)*g.dx,h=bh*v/mx;c.fillStyle=cl.bar;c.fillRect(x-bw/2,g.binBot-h,bw,h)});
+  if($('gExp').checked&&G.total){c.strokeStyle=cl.exp;c.lineWidth=2.5;
+    G.bins.forEach((_,k)=>{const x=g.cx+(k-G.n/2)*g.dx,y=g.binBot-bh*G.total*binP(k,G.n,G.p)/mx;c.beginPath();c.moveTo(x-bw/2-1,y);c.lineTo(x+bw/2+1,y);c.stroke()})}
+  if($('gNorm').checked&&G.total){const m=G.n*G.p,sd=Math.sqrt(G.n*G.p*(1-G.p));c.strokeStyle=cl.ok;c.lineWidth=2;c.beginPath();
+    for(let i=0;i<=200;i++){const k=-.5+(G.n+1)*i/200,x=g.cx+(k-G.n/2)*g.dx,y=g.binBot-bh*G.total*nPdf(k,m,sd)/mx;i?c.lineTo(x,y):c.moveTo(x,y)}c.stroke()}
+  c.fillStyle=cl.txt;c.font='11px '+css('--mono');c.textAlign='center';
+  const every=G.n>14?2:1;G.bins.forEach((_,k)=>{if(k%every===0)c.fillText(k,g.cx+(k-G.n/2)*g.dx,g.binBot+15)});
+  c.textAlign='left';c.font='12px '+css('--body');c.fillText('počet odrazů doprava',8,g.H-6);
+  c.fillStyle=cl.ball;
+  G.balls.forEach(b=>{const r=Math.min(Math.floor(b.t),G.n),f=b.t-r,kA=b.k[r],kB=b.k[Math.min(r+1,G.n)];
+    const xA=g.cx+(kA-r/2)*g.dx,xB=g.cx+(kB-(r+1)/2)*g.dx,x=xA+(xB-xA)*f,y=g.y0+b.t*g.dy-Math.sin(f*Math.PI)*g.dy*.35;
+    c.beginPath();c.arc(x,Math.min(y,g.binTop),3.4,0,7);c.fill()});
+}
+function gStats(){const n=G.total,m=n?G.sum/n:NaN,v=n>1?(G.sum2-n*m*m)/(n-1):NaN,EX=G.n*G.p,DX=G.n*G.p*(1-G.p);
+  $('gst').innerHTML=`<span>kuliček dole</span><span>${n}</span><span>průměr vzorku</span><span>${n?fx(m,2):'–'}</span><span>E(X) = nπ</span><span>${fx(EX,2)}</span>`+
+  `<span>rozptyl vzorku</span><span>${n>1?fx(v,2):'–'}</span><span>D(X) = nπ(1 − π)</span><span>${fx(DX,2)}</span>`+
+  `<span>nejčastější přihrádka v modelu</span><span>${Math.floor((G.n+1)*G.p)}</span>`}
+function gTick(){
+  if(G.queue>0){const k=Math.min(G.queue,3);for(let i=0;i<k;i++){const d=gPath(),ks=[0];d.forEach(v=>ks.push(ks[ks.length-1]+v));G.balls.push({t:0,k:ks})}G.queue-=k}
+  const rm=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  G.balls.forEach(b=>b.t+=rm?G.n:.22);
+  const done=G.balls.filter(b=>b.t>=G.n);if(done.length){done.forEach(b=>gLand(b.k[G.n]));G.balls=G.balls.filter(b=>b.t<G.n);gStats()}
+  gDraw();
+  G.raf=(G.balls.length||G.queue)?requestAnimationFrame(gTick):0}
+const gGo=()=>{if(!G.raf)G.raf=requestAnimationFrame(gTick)};
+$('g1').onclick=()=>{G.queue+=1;gGo()};
+$('g100').onclick=()=>{G.queue+=100;gGo()};
+$('g1000').onclick=()=>{for(let i=0;i<1000;i++)gLand(sum(gPath()));gStats();gDraw()};
+$('g0').onclick=gReset;
+const sum=a=>a.reduce((s,v)=>s+v,0);
+const gPar=()=>{G.n=+$('gn').value;G.p=+$('gp').value;$('gnv').textContent=G.n;$('gpv').textContent=fx(G.p,2);gReset()};
+$('gn').oninput=gPar;$('gp').oninput=gPar;
+$('gExp').onchange=gDraw;$('gNorm').onchange=()=>{$('gNormLeg').hidden=!$('gNorm').checked;gDraw()};
+
+/* =========================================================
+   TAB 2 — BAYES
+   ========================================================= */
+const PREV=[.001,.002,.005,.01,.02,.03,.05,.08,.1,.15,.2,.3,.5];
+const B={prior:null,stage:1};
+function bVals(){const prev=B.prior??PREV[+$('bprev').value],se=+$('bsens').value,sp=+$('bspec').value;return{prev,se,sp}}
+function bRender(){
+  const{prev,se,sp}=bVals();
+  $('bprevv').textContent=pc(prev,prev<.01?1:0);$('bsensv').textContent=pc(se,1);$('bspecv').textContent=pc(sp,1);
+  $('bprev').disabled=B.prior!==null;
+  const N=prev<.005?10000:1000;$('bN').textContent=N.toLocaleString('cs-CZ');
+  const F=N*prev,TP=F*se,FN=F-TP,OK=N-F,FP=OK*(1-sp),TN=OK-FP,ppv=TP/(TP+FP),npv=TN/(TN+FN);
+  const r=v=>Math.round(v).toLocaleString('cs-CZ'),r1=v=>v<10&&v%1?fx(v,1):r(v);
+  $('bt').innerHTML=`<thead><tr><th></th><th>poplach</th><th>bez poplachu</th><th>celkem</th></tr></thead><tbody>`+
+   `<tr><td class="t">podvod</td><td>${r1(TP)}</td><td>${r1(FN)}</td><td>${r1(F)}</td></tr>`+
+   `<tr><td class="t">v pořádku</td><td>${r1(FP)}</td><td>${r1(TN)}</td><td>${r(OK)}</td></tr>`+
+   `<tr class="tot"><td class="t">celkem</td><td>${r1(TP+FP)}</td><td>${r(FN+TN)}</td><td>${r(N)}</td></tr></tbody>`;
+  // grid of 1000 (scaled)
+  const M=1000,cols=50,sz=12.4,gp=.4;let g='',idx=0;
+  const cnt=[TP,FN,FP].map(v=>Math.round(v*M/N));const cTP=cnt[0],cF=Math.round(F*M/N),cFN=cF-cTP,cFP=cnt[2];
+  const colOf=i=>i<cTP?'var(--bad)':i<cF?'var(--ok)':i<cF+cFP?'var(--fp)':'var(--tn)';
+  for(let i=0;i<M;i++){const c=Math.floor(i/20),rw=i%20;g+=R(4+c*sz,4+rw*sz,sz-gp*2,sz-gp*2,colOf(i),'rx="1.5"')}
+  $('bg').innerHTML=g+(N!==M?T(4,264,'Mřížka ukazuje 1000 plateb, tabulka 10 000 (podvody jsou vzácné).','al'):'');
+  $('bst').innerHTML=`<span>apriorní P(podvod)</span><span>${pc(prev,2)}</span><span>P(poplach | podvod)</span><span>${pc(se,1)}</span><span>P(poplach | v pořádku)</span><span>${pc(1-sp,1)}</span><span>P(poplach) celkem</span><span>${pc((TP+FP)/N,2)}</span><span>P(v pořádku | bez poplachu)</span><span>${pc(npv,2)}</span>`;
+  $('bppv').textContent='P(podvod | poplach) = '+pc(ppv,1);
+  $('bsay').innerHTML=`Z ${r(TP+FP)} poplachů je skutečný podvod jen ${r1(TP)}. ${ppv<.5?`Většina poplachů je falešná, protože poctivých plateb je mnohem víc (${r(OK)}) a i malé procento chyb z nich dá ${r1(FP)} falešných poplachů.`:'Většina poplachů je skutečný podvod.'}`;
+  $('bform').innerHTML=`P(podvod|poplach) = P(poplach|podvod)·P(podvod) / P(poplach) = ${xl(se)}·${xl(+prev.toFixed(4))} / (${xl(se)}·${xl(+prev.toFixed(4))} + ${xl(+(1-sp).toFixed(4))}·${xl(+(1-prev).toFixed(4))}) = ${xl(+ppv.toFixed(4))}`;
+  $('b2').textContent=B.stage===1?'Druhá nezávislá kontrola':`${B.stage+1}. nezávislá kontrola`;
+  $('b2tip').textContent=B.prior===null?'Platba s poplachem projde druhou, nezávislou kontrolou. Aposteriorní pravděpodobnost z první kontroly se stane apriorní pro druhou.':`Teď ${B.stage}. kontrola: apriorní pravděpodobnost je výsledek předchozí kontroly (${pc(prev,1)}), ne původní podíl podvodů.`;
+  B.last=ppv;
+}
+['bprev','bsens','bspec'].forEach(k=>$(k).oninput=bRender);
+$('b2').onclick=()=>{B.prior=B.last;B.stage++;bRender()};
+$('bres').onclick=()=>{B.prior=null;B.stage=1;$('bprev').value=4;$('bsens').value=.9;$('bspec').value=.95;bRender()};
+
+/* =========================================================
+   TAB 3 — EXPECTED VALUE
+   ========================================================= */
+const EPRE={
+  s32:{ctx:'Kasino má dva automaty. Který je pro hráče lepší?',A:{nm:'Automat 1',o:[[100,.2],[-26,.8]]},B:{nm:'Automat 2',o:[[40,.5],[-50,.5]]}},
+  s37:{ctx:'Druhý automat má všechny částky desetkrát menší. E(aX) = a·E(X), D(aX) = a²·D(X).',A:{nm:'Automat 1',o:[[100,.2],[-20,.8]]},B:{nm:'Automat 2',o:[[10,.2],[-2,.8]]}},
+  poj:{ctx:'Pojištění domu stojí 1 500 Kč ročně. Bez pojištění hrozí s pravděpodobností 1 % škoda 100 000 Kč. Jedna „hra“ je jeden rok.',A:{nm:'Pojistit',o:[[-1500,1]]},B:{nm:'Nepojistit',o:[[0,.99],[-100000,.01]]}}
+};
+let E={};
+function eLoad(k){const p=JSON.parse(JSON.stringify(EPRE[k]));E={ctx:p.ctx,A:p.A,B:p.B,hA:[],hB:[],sA:0,sB:0,last:null};$('ectx').textContent=p.ctx;$('enA').value=p.A.nm;$('enB').value=p.B.nm;eTables();eRender()}
+const eMom=o=>{const ps=sum(o.map(r=>r[1])),m=sum(o.map(([v,p])=>v*p)),d=sum(o.map(([v,p])=>v*v*p))-m*m;return{ps,m,d:Math.max(0,d),s:Math.sqrt(Math.max(0,d))}};
+function eTable(key){const M=E[key],el=$('et'+key);
+  el.innerHTML='<thead><tr><th>výsledek xᵢ (Kč)</th><th>pᵢ</th><th>xᵢ·pᵢ</th><th></th></tr></thead><tbody>'+
+   M.o.map(([v,p],i)=>`<tr><td><input type="number" step="1" data-k="${key}" data-i="${i}" data-f="0" value="${v}" aria-label="výsledek ${i+1}"></td><td><input type="number" step="0.01" min="0" max="1" data-k="${key}" data-i="${i}" data-f="1" value="${p}" aria-label="pravděpodobnost ${i+1}"></td><td id="xp${key}${i}"></td><td>${M.o.length>1?`<button class="b" data-del="${key}${i}" aria-label="Odebrat řádek">−</button>`:''}</td></tr>`).join('')+
+   `</tbody>`+(M.o.length<4?`<tfoot><tr><td colspan="4"><button class="b" data-add="${key}">+ výsledek</button></td></tr></tfoot>`:'')}
+function eTables(){eTable('A');eTable('B');eMoments()}
+function eMoments(){['A','B'].forEach(k=>{const M=E[k],m=eMom(M.o);M.o.forEach(([v,p],i)=>$('xp'+k+i).textContent=fx(v*p,2));
+  $('es'+k).innerHTML=`<span>součet pᵢ</span><span${Math.abs(m.ps-1)>1e-9?' style="color:var(--warn)"':''}>${fx(m.ps,2)}${Math.abs(m.ps-1)>1e-9?' (má být 1)':''}</span><span>E(X)</span><span>${kc2(m.m)}</span><span>D(X)</span><span>${fx(m.d,1)}</span><span>σ</span><span>${fx(m.s,1)} Kč</span>`});
+  $('elA').textContent=E.A.nm;$('elB').textContent=E.B.nm}
+function eDraw1(o){const ps=sum(o.map(r=>r[1]));let u=Math.random()*ps;for(const[v,p]of o){if((u-=p)<0)return v}return o[o.length-1][0]}
+function ePlay(n){for(let i=0;i<n;i++){const a=eDraw1(E.A.o),b=eDraw1(E.B.o);E.sA+=a;E.sB+=b;E.hA.push(E.sA/(E.hA.length+1));E.hB.push(E.sB/(E.hB.length+1));E.last=[a,b]}eRender()}
+function eRender(){
+  const mA=eMom(E.A.o).m,mB=eMom(E.B.o).m,n=E.hA.length,W=640,H=380;
+  let vals=[mA,mB];const skip=Math.min(n-1,Math.floor(n*.02));if(n){for(let i=skip;i<n;i++){vals.push(E.hA[i],E.hB[i])}}
+  let lo=Math.min(...vals),hi=Math.max(...vals);if(hi-lo<1){lo-=1;hi+=1}const pad=(hi-lo)*.08;lo-=pad;hi+=pad;
+  const xmax=Math.max(10,n),f=frame({W,H,L:64,Tp:14,Rt:14,B:38,x0:0,x1:xmax,y0:lo,y1:hi,xt:ticks(0,xmax,5).filter(v=>v%1===0),xl:'počet her',yf:v=>tf(v)});
+  let g=f.g;g+=Ln(f.X(0),f.Y(0),f.X(xmax),f.Y(0),'var(--muted)','stroke-width="1" opacity=".6"');
+  [[mA,'var(--fit)'],[mB,'var(--you)']].forEach(([m,c])=>g+=Ln(f.X(0),f.Y(m),f.X(xmax),f.Y(m),c,'stroke-width="1.5" stroke-dasharray="6 4"'));
+  const step=Math.max(1,Math.floor(n/600));
+  [[E.hA,'var(--fit)'],[E.hB,'var(--you)']].forEach(([h,c])=>{if(!n)return;let pts=[];for(let i=0;i<n;i+=step){const y=Math.max(lo,Math.min(hi,h[i]));pts.push(f.X(i+1).toFixed(1)+','+f.Y(y).toFixed(1))}
+    pts.push(f.X(n).toFixed(1)+','+f.Y(Math.max(lo,Math.min(hi,h[n-1]))).toFixed(1));g+=`<polyline points="${pts.join(' ')}" fill="none" stroke="${c}" stroke-width="2"/>`});
+  if(!n)g+=T(W/2,H/2,'Klikněte na „Hrát“','al','text-anchor="middle"');
+  $('es').innerHTML=g;
+  $('elast').innerHTML=n?`<span>odehráno</span><span>${n}×</span><span>${esc(E.A.nm)}: poslední / průměr</span><span>${kc(E.last[0])} / ${kc2(E.hA[n-1])}</span><span>${esc(E.B.nm)}: poslední / průměr</span><span>${kc(E.last[1])} / ${kc2(E.hB[n-1])}</span><span>${esc(E.A.nm)}: celkem</span><span>${kc(E.sA)}</span><span>${esc(E.B.nm)}: celkem</span><span>${kc(E.sB)}</span>`:'<span>odehráno</span><span>0×</span>';
+}
+const eReset=()=>{E.hA=[];E.hB=[];E.sA=0;E.sB=0;E.last=null;eRender()};
+$('epre').onchange=e=>eLoad(e.target.value);
+document.querySelectorAll('[data-play]').forEach(b=>b.onclick=()=>ePlay(+b.dataset.play));
+$('e0').onclick=eReset;
+$('p3').addEventListener('input',e=>{const t=e.target;
+  if(t.id==='enA'||t.id==='enB'){E[t.id.slice(2)].nm=t.value;eMoments();eRender();return}
+  if(t.dataset.k){E[t.dataset.k].o[+t.dataset.i][+t.dataset.f]=+t.value||0;eMoments();eReset()}});
+$('p3').addEventListener('click',e=>{const t=e.target.closest('button');if(!t)return;
+  if(t.dataset.add){E[t.dataset.add].o.push([0,0]);eTables();eReset()}
+  if(t.dataset.del){const k=t.dataset.del[0],i=+t.dataset.del.slice(1);E[k].o.splice(i,1);eTables();eReset()}});
+
+/* =========================================================
+   TAB 4 — DISTRIBUTIONS
+   ========================================================= */
+const DIST={
+  alt:{ctx:'Klient splatí úvěr včas (X = 1), nebo ne (X = 0).',disc:true,
+    par:[['p','π',.01,.99,.01,.9]],sup:P=>[0,1],pmf:(k,P)=>k===1?P.p:k===0?1-P.p:0,EX:P=>P.p,DX:P=>P.p*(1-P.p),
+    xl:(P,k,c)=>`BINOM.DIST(${k};1;${xl(P.p)};${c})`,q:['eq',1]},
+  bin:{ctx:'Banka schválí úvěr 20 novým klientům. Každý z nich nezávisle nesplácí s pravděpodobností 0,1. X = počet nesplácejících.',disc:true,
+    par:[['n','n',1,100,1,20],['p','π',.01,.99,.01,.1]],sup:P=>[0,P.n],pmf:(k,P)=>binP(k,P.n,P.p),EX:P=>P.n*P.p,DX:P=>P.n*P.p*(1-P.p),
+    xl:(P,k,c)=>`BINOM.DIST(${k};${P.n};${xl(P.p)};${c})`,q:['ge',3],norm:P=>[P.n*P.p,Math.sqrt(P.n*P.p*(1-P.p))]},
+  hyp:{ctx:'Auditor náhodně vybere n faktur z N = 50, z nichž N_A = 5 je chybných. Výběr je bez vracení. X = počet chybných ve výběru.',disc:true,
+    par:[['N','N',2,200,1,50],['K','N_A',0,200,1,5],['n','n',1,200,1,10]],fix:P=>{P.K=Math.min(P.K,P.N);P.n=Math.min(P.n,P.N)},
+    sup:P=>[Math.max(0,P.n-(P.N-P.K)),Math.min(P.n,P.K)],pmf:(k,P)=>hypP(k,P.N,P.K,P.n),EX:P=>P.n*P.K/P.N,DX:P=>P.n*(P.K/P.N)*(1-P.K/P.N)*(P.N-P.n)/Math.max(1,P.N-1),
+    xl:(P,k,c)=>`HYPGEOM.DIST(${k};${P.n};${P.K};${P.N};${c})`,q:['ge',1]},
+  poi:{ctx:'Na pobočku přijdou v průměru λ = 3 klienti za 10 minut. X = počet klientů v dalších 10 minutách.',disc:true,
+    par:[['l','λ',.1,30,.1,3]],sup:P=>[0,Math.max(10,Math.ceil(P.l+5*Math.sqrt(P.l)))],pmf:(k,P)=>poiP(k,P.l),EX:P=>P.l,DX:P=>P.l,
+    xl:(P,k,c)=>`POISSON.DIST(${k};${xl(P.l)};${c})`,q:['eq',0],norm:P=>[P.l,Math.sqrt(P.l)]},
+  uni:{ctx:'Tramvaj jezdí každých 10 minut a na zastávku přijdete v náhodný okamžik. X = doba čekání v minutách.',disc:false,
+    par:[['a','a',0,20,.5,0],['b','b',.5,30,.5,10]],fix:P=>{if(P.b<=P.a)P.b=P.a+.5},rng:P=>[P.a-(P.b-P.a)*.15,P.b+(P.b-P.a)*.15],
+    pdf:(x,P)=>x>=P.a&&x<=P.b?1/(P.b-P.a):0,cdf:(x,P)=>x<P.a?0:x>P.b?1:(x-P.a)/(P.b-P.a),EX:P=>(P.a+P.b)/2,DX:P=>(P.b-P.a)**2/12,
+    xl:null,q:['le',3]},
+  nor:{ctx:'Doba vyřízení žádosti o úvěr má průměr μ = 30 minut a směrodatnou odchylku σ = 8 minut. X = doba vyřízení.',disc:false,
+    par:[['m','μ',-50,100,1,30],['s','σ',.5,30,.5,8]],rng:P=>[P.m-4*P.s,P.m+4*P.s],
+    pdf:(x,P)=>nPdf(x,P.m,P.s),cdf:(x,P)=>nCdf(x,P.m,P.s),EX:P=>P.m,DX:P=>P.s*P.s,
+    xl:(P,x,c)=>`NORM.DIST(${xl(x)};${xl(P.m)};${xl(P.s)};${c})`,q:['ge',45]}
+};
+const QN={eq:'P(X = k)',le:'P(X ≤ k)',ge:'P(X ≥ k)',bt:'P(a ≤ X ≤ b)'};
+let D={key:'bin',P:{},q:'ge',k1:3,k2:5};
+function dLoad(key){const d=DIST[key];D.key=key;D.P={};d.par.forEach(([k,,,,,v])=>D.P[k]=v);D.q=d.q[0];D.k1=d.q[1];D.k2=d.q[1]+(d.disc?2:5);
+  $('dctx').textContent=d.ctx;
+  $('dpar').innerHTML=d.par.map(([k,lab,mn,mx,st])=>`<label class="rng" for="dp_${k}">${lab}<input type="range" id="dp_${k}" data-p="${k}" min="${mn}" max="${mx}" step="${st}" value="${D.P[k]}"><span class="val" id="dpv_${k}"></span></label>`).join('');
+  const qs=d.disc?['eq','le','ge','bt']:['le','ge','bt'];
+  $('dq').innerHTML=qs.map(q=>`<option value="${q}"${q===D.q?' selected':''}>${d.disc?QN[q]:QN[q].replace(/k/g,'x').replace('X = x','X = x')}</option>`).join('');
+  $('dnormL').hidden=!d.norm;if(!d.norm)$('dnorm').checked=false;
+  dQInputs();dRender()}
+function dRange(){const d=DIST[D.key];if(d.disc){const[a,b]=d.sup(D.P);return[a,b]}return d.rng(D.P)}
+function dQInputs(){const d=DIST[D.key],[a,b]=d.disc?[0,d.key==='hyp'?D.P.n:d.sup(D.P)[1]]:dRange(),st=d.disc?1:(b-a>40?1:.5);
+  const two=D.q==='bt',nm=d.disc?['k','a','b']:['x','a','b'];
+  D.k1=Math.max(a,Math.min(b,D.k1));D.k2=Math.max(a,Math.min(b,D.k2));if(two&&D.k2<D.k1)D.k2=D.k1;
+  if(!d.disc){D.k1=+(Math.round(D.k1/st)*st).toFixed(2);D.k2=+(Math.round(D.k2/st)*st).toFixed(2)}
+  $('dqk').innerHTML=`<label class="rng" for="dk1">${two?nm[1]:nm[0]}<input type="range" id="dk1" min="${d.disc?a:+a.toFixed(1)}" max="${d.disc?b:+b.toFixed(1)}" step="${st}" value="${D.k1}"><span class="val" id="dk1v"></span></label>`+
+    (two?`<label class="rng" for="dk2">${nm[2]}<input type="range" id="dk2" min="${d.disc?a:+a.toFixed(1)}" max="${d.disc?b:+b.toFixed(1)}" step="${st}" value="${D.k2}"><span class="val" id="dk2v"></span></label>`:'')}
+function dProb(){const d=DIST[D.key],P=D.P,a=D.k1,b=D.k2;
+  if(d.disc){const[lo,hi]=d.sup(P);let s=0;for(let k=lo;k<=hi;k++){const ok=D.q==='eq'?k===a:D.q==='le'?k<=a:D.q==='ge'?k>=a:(k>=a&&k<=b);if(ok)s+=d.pmf(k,P)}return s}
+  return D.q==='le'?d.cdf(a,P):D.q==='ge'?1-d.cdf(a,P):d.cdf(b,P)-d.cdf(a,P)}
+function dIn(x){const a=D.k1,b=D.k2;return D.q==='eq'?x===a:D.q==='le'?x<=a:D.q==='ge'?x>=a:(x>=a&&x<=b)}
+function dRender(){
+  const d=DIST[D.key],P=D.P;if(d.fix)d.fix(P);
+  d.par.forEach(([k])=>{const el=$('dp_'+k);if(+el.value!==P[k])el.value=P[k];$('dpv_'+k).textContent=Number.isInteger(P[k])?P[k]:fx(P[k],k==='p'?2:1)});
+  if(D.key==='hyp'){$('dp_K').max=P.N;$('dp_n').max=P.N}
+  $('dk1v').textContent=d.disc?D.k1:fx(D.k1,1);if($('dk2v'))$('dk2v').textContent=d.disc?D.k2:fx(D.k2,1);
+  const W=640,H=360,cdf=$('dcdf').checked;let g='',leg='';
+  if(d.disc){
+    const[lo,hi]=d.sup(P),x0=Math.min(lo,0)-.6,xmax=Math.max(hi,D.key==='hyp'?P.n:hi)+.6;
+    let ym=0;const vals=[];for(let k=Math.max(0,Math.floor(x0+1));k<=Math.floor(xmax);k++){const v=cdf?sumTo(k):d.pmf(k,P);vals.push([k,v]);ym=Math.max(ym,v)}
+    function sumTo(k){let s=0;for(let j=lo;j<=Math.min(k,hi);j++)s+=d.pmf(j,P);return s}
+    if(cdf)ym=1;
+    const f=frame({W,H,L:52,Tp:14,Rt:14,B:40,x0,x1:xmax,y0:0,y1:ym*1.08,xt:ticks(Math.ceil(x0),Math.floor(xmax),8).filter(v=>v%1===0),xl:'k',yf:v=>tf(v)});g=f.g;
+    const bw=Math.min(36,f.pw/(xmax-x0)*.72);
+    if(cdf){vals.forEach(([k,v],i)=>{const nx=i<vals.length-1?vals[i+1][0]:xmax;g+=Ln(f.X(k),f.Y(v),f.X(nx),f.Y(v),dIn(k)?'var(--you)':'var(--fit)','stroke-width="2.5"')+`<circle cx="${f.X(k)}" cy="${f.Y(v)}" r="3.5" fill="${dIn(k)?'var(--you)':'var(--fit)'}"/>`});
+      leg='<span><i class="ln" style="background:var(--fit)"></i>F(k) = P(X ≤ k)</span>'}
+    else{vals.forEach(([k,v])=>{const on=dIn(k);g+=R(f.X(k)-bw/2,f.Y(v),bw,f.Y(0)-f.Y(v),on?'var(--you)':'var(--fit)',on?'':'opacity=".55"');
+        if(bw>20&&v>ym*.03)g+=T(f.X(k),f.Y(v)-4,String(+v.toFixed(3)).replace('.',','),'ax','text-anchor="middle" font-size="9.5"')});
+      leg='<span><i style="background:var(--you)"></i>hodnoty, které patří do otázky</span><span><i style="background:var(--fit);opacity:.55"></i>ostatní hodnoty</span>'}
+    if($('dnorm').checked&&d.norm){const[m,s]=d.norm(P);let pts=[];for(let i=0;i<=200;i++){const x=x0+(xmax-x0)*i/200,y=cdf?nCdf(x,m,s):nPdf(x,m,s);pts.push(f.X(x).toFixed(1)+','+f.Y(Math.min(y,ym*1.08)).toFixed(1))}
+      g+=`<polyline points="${pts.join(' ')}" fill="none" stroke="var(--ok)" stroke-width="2"/>`;leg+=`<span><i class="ln" style="background:var(--ok)"></i>N(${fx(m,1)}; ${fx(s,2)}²)</span>`}
+  } else {
+    const[x0,x1]=d.rng(P);const N=300,xs=[...Array(N+1)].map((_,i)=>x0+(x1-x0)*i/N);const fn=cdf?(x=>d.cdf(x,P)):(x=>d.pdf(x,P));
+    const ym=cdf?1:Math.max(...xs.map(fn));const f=frame({W,H,L:52,Tp:14,Rt:14,B:40,x0,x1,y0:0,y1:ym*1.12,xl:'x',yf:v=>tf(v)});g=f.g;
+    if(!cdf){let a=x0,b=x1;if(D.q==='le')b=D.k1;else if(D.q==='ge')a=D.k1;else{a=D.k1;b=D.k2}
+      const sh=xs.filter(x=>x>=a&&x<=b);if(sh.length){const pts=[[a,0],...[a,...sh,b].map(x=>[x,fn(x)]),[b,0]];g+=`<polygon points="${pts.map(([x,y])=>f.X(x).toFixed(1)+','+f.Y(y).toFixed(1)).join(' ')}" fill="var(--you)" opacity=".45"/>`}}
+    else{[D.k1,...(D.q==='bt'?[D.k2]:[])].forEach(x=>{g+=Ln(f.X(x),f.Y(0),f.X(x),f.Y(fn(x)),'var(--you)','stroke-width="1.5" stroke-dasharray="4 3"')+Ln(f.X(x0),f.Y(fn(x)),f.X(x),f.Y(fn(x)),'var(--you)','stroke-width="1.5" stroke-dasharray="4 3"')})}
+    g+=`<polyline points="${xs.map(x=>f.X(x).toFixed(1)+','+f.Y(fn(x)).toFixed(1)).join(' ')}" fill="none" stroke="var(--fit)" stroke-width="2.5"/>`;
+    leg=cdf?'<span><i class="ln" style="background:var(--fit)"></i>distribuční funkce F(x)</span><span>čárkovaně F v zadaných bodech</span>':'<span><i class="ln" style="background:var(--fit)"></i>hustota f(x)</span><span><i style="background:var(--you);opacity:.45"></i>plocha = hledaná pravděpodobnost</span>';
+  }
+  $('ds').innerHTML=g;$('dleg').innerHTML=leg;
+  const p=dProb(),qs=d.disc?QN[D.q].replace('k',D.k1).replace('a',D.k1).replace('b',D.k2):QN[D.q].replace('k',fx(D.k1,1)).replace('a',fx(D.k1,1)).replace('b',fx(D.k2,1));
+  $('dprob').textContent=qs+' = '+fx(p,4);
+  let f='';
+  if(d.xl){const a=D.k1,b=D.k2,F=(k,c)=>d.xl(P,k,c);
+    if(d.disc){f=D.q==='eq'?`=${F(a,0)}`:D.q==='le'?`=${F(a,1)}`:D.q==='ge'?(a<=0?'=1':`=1-${F(a-1,1)}`):(a<=0?`=${F(b,1)}`:`=${F(b,1)}-${F(a-1,1)}`)}
+    else f=D.q==='le'?`=${F(a,1)}`:D.q==='ge'?`=1-${F(a,1)}`:`=${F(b,1)}-${F(a,1)}`}
+  else f=D.q==='le'?`=(${xl(D.k1)}-${xl(P.a)})/(${xl(P.b)}-${xl(P.a)})`:D.q==='ge'?`=(${xl(P.b)}-${xl(D.k1)})/(${xl(P.b)}-${xl(P.a)})`:`=(${xl(D.k2)}-${xl(D.k1)})/(${xl(P.b)}-${xl(P.a)})`;
+  $('dxl').textContent=f;
+  $('dxtip').textContent=d.disc?(D.q==='ge'?'P(X ≥ k) = 1 − P(X ≤ k − 1). Excel umí jen „menší nebo rovno“, proto odečítáme od jedničky.':D.q==='bt'?'P(a ≤ X ≤ b) = F(b) − F(a − 1).':D.q==='eq'?'Poslední argument 0 = pravděpodobnost jedné hodnoty, 1 = distribuční funkce.':'Poslední argument 1 znamená distribuční funkci F(k) = P(X ≤ k).')
+    :(D.key==='uni'?'Excel nemá funkci pro rovnoměrné rozdělení, plocha obdélníku se spočítá přímo. U spojitého rozdělení je P(X = x) = 0, proto je P(X ≤ x) = P(X < x).':'U spojitého rozdělení je P(X = x) = 0, proto je P(X ≤ x) = P(X < x). Pravděpodobnost je plocha pod hustotou.');
+  const EX=d.EX(P),DX=d.DX(P);
+  $('dst').innerHTML=`<span>E(X)</span><span>${fx(EX,3)}</span><span>D(X)</span><span>${fx(DX,3)}</span><span>σ</span><span>${fx(Math.sqrt(DX),3)}</span>`;
+}
+$('dsel').onchange=e=>dLoad(e.target.value);
+$('dpar').addEventListener('input',e=>{const k=e.target.dataset.p;if(!k)return;D.P[k]=+e.target.value;const d=DIST[D.key];if(d.fix)d.fix(D.P);dQInputs();dRender()});
+$('dq').onchange=e=>{D.q=e.target.value;dQInputs();dRender()};
+$('dqk').addEventListener('input',e=>{if(e.target.id==='dk1'){D.k1=+e.target.value;if(D.q==='bt'&&D.k2<D.k1){D.k2=D.k1;$('dk2').value=D.k2}}if(e.target.id==='dk2'){D.k2=+e.target.value;if(D.k2<D.k1){D.k1=D.k2;$('dk1').value=D.k1}}dRender()});
+$('dcdf').onchange=dRender;$('dnorm').onchange=dRender;
+
+/* =========================================================
+   TAB 5 — CLT
+   ========================================================= */
+const POP={
+  exp:{lab:'útrata (Kč)',lo:0,hi:4000,gen:()=>-800*Math.log(1-Math.random())},
+  star:{lab:'počet hvězd',lo:.5,hi:5.5,gen:()=>{const u=Math.random(),c=[.36,.44,.5,.64,1];return 1+c.findIndex(v=>u<v)}},
+  uni:{lab:'čekání (min)',lo:0,hi:10,gen:()=>10*Math.random()},
+  die:{lab:'hozené číslo',lo:.5,hi:6.5,gen:()=>1+Math.floor(6*Math.random())}
+};
+const C={key:'exp',pop:[],mu:0,sd:0,means:[],last:null};
+const NB=60;
+function cLoad(){const p=POP[C.key];C.pop=[...Array(20000)].map(p.gen);C.mu=sum(C.pop)/C.pop.length;C.sd=Math.sqrt(sum(C.pop.map(v=>(v-C.mu)**2))/C.pop.length);cReset()}
+function cReset(){C.means=[];C.last=null;cRender()}
+function cSample(k){const n=+$('cn').value;for(let j=0;j<k;j++){const s=[];for(let i=0;i<n;i++)s.push(C.pop[Math.floor(Math.random()*C.pop.length)]);C.means.push(sum(s)/n);C.last=s}cRender()}
+function hist(arr,lo,hi){const h=Array(NB).fill(0),w=(hi-lo)/NB;arr.forEach(v=>{const i=Math.floor((v-lo)/w);if(i>=0&&i<NB)h[i]++;else if(i>=NB)h[NB-1]++});return h}
+function cRender(){
+  const p=POP[C.key],n=+$('cn').value,lo=p.lo,hi=p.hi,w=(hi-lo)/NB;$('cnv').textContent=n;
+  // population
+  let h=hist(C.pop,lo,hi),mx=Math.max(...h),f=frame({W:640,H:200,L:52,Tp:24,Rt:14,B:36,x0:lo,x1:hi,y0:0,y1:mx/C.pop.length/w*1.1,xl:p.lab,yt:[],xt:ticks(lo,hi,6)}),g=f.g;
+  h.forEach((v,i)=>g+=R(f.X(lo+i*w)+.5,f.Y(v/C.pop.length/w),f.X(lo+w)-f.X(lo)-1,f.Y(0)-f.Y(v/C.pop.length/w),'var(--muted)','opacity=".45"'));
+  g+=Ln(f.X(C.mu),24,f.X(C.mu),f.Y(0),'var(--ink)','stroke-width="1.5"')+T(f.X(C.mu)+5,20,'μ = '+fx(C.mu,C.key==='exp'?0:2),'al');
+  g+=T(52,14,'Populace','al','font-weight="600"');
+  if(C.last){const show=C.last.slice(0,100);show.forEach(v=>g+=Ln(f.X(Math.min(v,hi)),f.Y(0)-14,f.X(Math.min(v,hi)),f.Y(0),'var(--ok)','stroke-width="2" opacity=".8"'));
+    const m=sum(C.last)/C.last.length;g+=`<path d="M${f.X(m)} ${f.Y(0)-16} l-6 -10 h12z" fill="var(--ok)"/>`}
+  $('cp').innerHTML=g;
+  // means
+  const N=C.means.length,hm=hist(C.means,lo,hi),se=C.sd/Math.sqrt(n),pk=N?Math.max(...hm):0,pkN=N*w*nPdf(C.mu,C.mu,se);
+  const ym=Math.max(pk,N?pkN:1,1)*1.1;
+  f=frame({W:640,H:240,L:52,Tp:24,Rt:14,B:36,x0:lo,x1:hi,y0:0,y1:ym,xl:'průměr vzorku ('+p.lab+')',xt:ticks(lo,hi,6),yt:ticks(0,ym,4).filter(v=>v%1===0)});g=f.g;
+  hm.forEach((v,i)=>{if(v)g+=R(f.X(lo+i*w)+.5,f.Y(v),f.X(lo+w)-f.X(lo)-1,f.Y(0)-f.Y(v),'var(--fit)')});
+  if(N){let pts=[];for(let i=0;i<=300;i++){const x=lo+(hi-lo)*i/300;pts.push(f.X(x).toFixed(1)+','+f.Y(Math.min(ym,N*w*nPdf(x,C.mu,se))).toFixed(1))}g+=`<polyline points="${pts.join(' ')}" fill="none" stroke="var(--you)" stroke-width="2"/>`}
+  if(C.last){const m=sum(C.last)/C.last.length;g+=`<path d="M${f.X(m)} ${f.Y(0)-2} l-6 -10 h12z" fill="var(--ok)"/>`}
+  g+=T(52,14,'Průměry vzorků o velikosti n = '+n,'al','font-weight="600"');
+  if(!N)g+=T(346,130,'Klikněte na „1 vzorek“ nebo „100 vzorků“','al','text-anchor="middle"');
+  $('cm').innerHTML=g;
+  const mm=N?sum(C.means)/N:NaN,sm=N>1?Math.sqrt(sum(C.means.map(v=>(v-mm)**2))/(N-1)):NaN,d=C.key==='exp'?0:2,d2=C.key==='exp'?1:3;
+  $('cst').innerHTML=`<span>μ populace</span><span>${fx(C.mu,d)}</span><span>σ populace</span><span>${fx(C.sd,d)}</span><span>počet vzorků</span><span>${N}</span>`+
+    `<span>průměr průměrů</span><span>${N?fx(mm,d2):'–'}</span><span>SD průměrů (pozorovaná)</span><span>${N>1?fx(sm,d2):'–'}</span><span>σ/√n (teoretická)</span><span>${fx(se,d2)}</span>`+
+    (C.last?`<span>poslední vzorek: průměr</span><span>${fx(sum(C.last)/C.last.length,d2)}</span>`:'');
+}
+$('cpop').onchange=e=>{C.key=e.target.value;cLoad()};
+$('cn').oninput=cReset;
+document.querySelectorAll('[data-cs]').forEach(b=>b.onclick=()=>cSample(+b.dataset.cs));
+$('c0').onclick=cReset;
+
+/* =========================================================
+   EXERCISES
+   ========================================================= */
+function buildEx(){
+  const b10=binP(5,10,.5),b7=binP(7,10,.7);
+  const bay=(pr,se,sp)=>se*pr/(se*pr+(1-sp)*(1-pr));
+  const p1=bay(.02,.9,.95),p2=bay(.2,.9,.95),p3=bay(p1,.9,.95);
+  const m1=.2*100+.8*-26,m2=.5*40+.5*-50,s1=Math.sqrt(.2*100*100+.8*26*26-m1*m1),s2=Math.sqrt(.5*1600+.5*2500-m2*m2);
+  let bge3=0;for(let k=0;k<=2;k++)bge3+=binP(k,20,.1);bge3=1-bge3;
+  const po0=poiP(0,3);let po5=0;for(let k=0;k<=5;k++)po5+=poiP(k,3);
+  const h0=hypP(0,50,5,10),n45=1-nCdf(45,30,8),n2238=nCdf(38,30,8)-nCdf(22,30,8);
+  const ex=[
+   ['Nejčastější přihrádka','tab. 1',`Nastavte n = 10 a π = 0,5. Kolik je E(X)? Jaká je pravděpodobnost, že kulička skončí přesně v prostřední přihrádce? Co se změní při π = 0,7?`,
+    `E(X) = nπ = 5. P(X = 5) = ${fx(b10,3)}, tedy i nejčastější přihrádka nastane jen asi ve čtvrtině případů. Při π = 0,7 je E(X) = 7, P(X = 7) = ${fx(b7,3)} a rozdělení je zešikmené doleva. Ověřte v záložce 4 (binomické, n = 10).`],
+   ['Model vs. vzorek','tab. 1',`Pusťte 100 kuliček a podívejte se, jak se vzorek liší od očekávaných četností. Pak přidejte 1000. Co se stalo?`,
+    `Při 100 kuličkách jsou odchylky od modelu velké, při 1100 se histogram oranžovým značkám přiblíží. Vzorek je náhodný, model je pevný. Z velkého vzorku tvar modelu poznáme lépe (zákon velkých čísel).`],
+   ['Kolik poplachů je podvod?','tab. 2',`Podvodů je 2 %, citlivost 90 %, specificita 95 %. Jaká je P(podvod | poplach)? Proč je tak nízká, když systém „pozná 90 % podvodů“?`,
+    `P(podvod | poplach) = ${pc(p1,1)}. Na 1000 plateb připadá 18 zachycených podvodů, ale 49 falešných poplachů z 980 poctivých plateb. 90 % je P(poplach | podvod), to je jiná podmíněná pravděpodobnost.`],
+   ['Záleží na apriorní pravděpodobnosti','tab. 2',`Nechte citlivost a specificitu stejné a zvyšte podíl podvodů na 20 % (např. platby z rizikové země). Co se stane s P(podvod | poplach)?`,
+    `Vzroste na ${pc(p2,1)}. Stejný systém dává úplně jiné výsledky podle toho, jak častý je jev v populaci. To je smysl apriorní pravděpodobnosti v Bayesově větě.`],
+   ['Druhá kontrola','tab. 2',`Vraťte se na 2 % a klikněte na „Druhá nezávislá kontrola“. Jaká je pravděpodobnost podvodu, když poplach hlásí obě kontroly?`,
+    `${pc(p3,1)}. Aposteriorní pravděpodobnost z první kontroly (${pc(p1,1)}) se stala apriorní pro druhou. Takhle Bayesovský přístup postupně aktualizuje, co víme.`],
+   ['Který automat?','tab. 3',`Spočítejte E(X) a σ pro oba automaty ze slidu 32. Který je lepší pro hráče? Který je rizikovější? Ověřte simulací 1000 her.`,
+    `E(X₁) = ${kc2(m1)}, E(X₂) = ${kc2(m2)}, lepší je první. σ₁ = ${fx(s1,1)} Kč, σ₂ = ${fx(s2,1)} Kč: první automat je zároveň rizikovější. Oba jsou dlouhodobě prodělečné a průběžný průměr se po stovkách her ustálí pod nulou.`],
+   ['Proč se pojišťovat?','tab. 3',`V příkladu s pojištěním má varianta „Nepojistit“ vyšší E(X) (−1 000 Kč) než „Pojistit“ (−1 500 Kč). Proč se lidé přesto pojišťují? Co ukazuje σ?`,
+    `Nepojistit má σ ≈ ${fx(Math.sqrt(.01*1e10-1e6),0)} Kč, Pojistit σ = 0. Střední hodnota popisuje průměr přes mnoho let nebo mnoho lidí, ale jeden člověk škodu 100 000 Kč nemusí unést. Pojišťovna má tisíce klientů, takže pro ni platí zákon velkých čísel a o 500 Kč na klienta vydělává.`],
+   ['Nesplácející klienti','tab. 4, binomické',`Z 20 klientů každý nezávisle nesplácí s pravděpodobností 0,1. Jaká je pravděpodobnost, že nesplácet budou aspoň 3? Napište vzorec pro Excel.`,
+    `P(X ≥ 3) = 1 − P(X ≤ 2) = ${fx(bge3,4)}. Excel: <code>=1-BINOM.DIST(2;20;0,1;1)</code>.`],
+   ['Fronta na pobočce','tab. 4, Poissonovo',`Za 10 minut přijdou v průměru 3 klienti. Jaká je pravděpodobnost, že nepřijde nikdo? A že jich přijde víc než 5?`,
+    `P(X = 0) = ${fx(po0,4)}, P(X > 5) = 1 − P(X ≤ 5) = ${fx(1-po5,4)}. Excel: <code>=POISSON.DIST(0;3;0)</code> a <code>=1-POISSON.DIST(5;3;1)</code>.`],
+   ['Audit faktur','tab. 4, hypergeometrické',`Z 50 faktur je 5 chybných, auditor jich vybere 10. Jaká je pravděpodobnost, že najde aspoň jednu chybnou? Proč tu nepoužijeme binomické rozdělení?`,
+    `P(X ≥ 1) = 1 − P(X = 0) = ${fx(1-h0,4)}. Vybíráme bez vracení: když auditor vytáhne chybnou fakturu, chybných ve zbytku ubude a pravděpodobnost se změní. Binomické rozdělení předpokládá stejné π v každém pokusu.`],
+   ['Doba vyřízení','tab. 4, normální',`Doba vyřízení má N(30; 8²). Jaká je pravděpodobnost, že žádost bude trvat déle než 45 minut? A jaká, že bude trvat mezi 22 a 38 minutami?`,
+    `P(X ≥ 45) = ${fx(n45,4)}, Excel <code>=1-NORM.DIST(45;30;8;1)</code>. P(22 ≤ X ≤ 38) = ${fx(n2238,4)}, tedy asi 68 % hodnot leží do jedné σ od průměru.`],
+   ['Průměrná útrata','tab. 5',`Útrata zákazníka je silně zešikmená. Porovnejte histogram průměrů pro n = 1 a n = 30. Kolikrát musíme zvětšit vzorek, aby se SD průměru zmenšila na polovinu?`,
+    `Při n = 1 vypadá histogram průměrů jako populace (zešikmený). Při n = 30 je skoro symetrický a odpovídá normálnímu rozdělení. SD průměru je σ/√n, takže pro poloviční SD potřebujeme čtyřnásobný vzorek.`]
+  ];
+  $('ex').innerHTML=ex.map(([h,tag,q,a])=>`<li><h3>${h}<span class="tag">${tag}</span></h3><p>${q}</p><details><summary>Řešení</summary><div>${a}</div></details></li>`).join('');
+}
+
+/* ---------- tabs ---------- */
+document.querySelector('nav').onclick=e=>{const b=e.target.closest('button');if(!b)return;
+  document.querySelectorAll('nav button').forEach(x=>{x.setAttribute('aria-selected',x===b);$(x.dataset.tab).hidden=x!==b});
+  if(b.dataset.tab==='p1')gDraw();
+  try{localStorage.setItem('pp_tab',b.dataset.tab)}catch(_){}};
+try{const t=localStorage.getItem('pp_tab');if(t){const b=document.querySelector(`nav button[data-tab="${t}"]`);if(b)b.click()}}catch(_){}
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change',gDraw);
+new MutationObserver(gDraw).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
+
+/* ---------- init ---------- */
+$('gnv').textContent=G.n;$('gpv').textContent=fx(G.p,2);gReset();for(let i=0;i<300;i++)gLand(sum(gPath()));gStats();gDraw();
+bRender();eLoad('s32');ePlay(50);dLoad('bin');cLoad();cSample(200);buildEx();
+</script>
+
+</body></html>

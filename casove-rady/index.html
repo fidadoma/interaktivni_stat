@@ -1,0 +1,599 @@
+<!doctype html><html lang="cs"><head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Časové řady v pohybu</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: same system as the regression / contingency / probability pages — one column, tabbed labs, plot left + controls right */
+:root{
+  --bg:#f6f7f9; --panel:#ffffff; --ink:#18212b; --muted:#5b6773; --line:#d9dee4;
+  --fit:#1f5fa8; --you:#d0661c; --warn:#c2410c; --soft:#eaf0f7; --ok:#2a8f6a; --c4:#9b1d63; --c5:#6b5bb5;
+  --onk:#ffffff;
+  --display:"Bricolage Grotesque",ui-sans-serif,system-ui,sans-serif;
+  --body:"Instrument Sans",ui-sans-serif,system-ui,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#12171d; --panel:#1a2129; --ink:#e6ebf0; --muted:#9aa6b2; --line:#2e3843;
+  --fit:#6aa7ec; --you:#f0954f; --warn:#f08a52; --soft:#1f2a36; --ok:#4fb88f; --c4:#e46aa9; --c5:#9a8be0;
+  --onk:#0f141a; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#12171d; --panel:#1a2129; --ink:#e6ebf0; --muted:#9aa6b2; --line:#2e3843;
+  --fit:#6aa7ec; --you:#f0954f; --warn:#f08a52; --soft:#1f2a36; --ok:#4fb88f; --c4:#e46aa9; --c5:#9a8be0;
+  --onk:#0f141a; color-scheme:dark}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.55;padding-inline:16px;padding-block:24px 48px}
+.wrap{max-width:1080px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
+header h1{font-family:var(--display);font-size:clamp(26px,4vw,38px);line-height:1.1;margin:0;text-wrap:balance}
+header p{margin:6px 0 0;color:var(--muted);max-width:70ch}
+nav{display:flex;flex-wrap:wrap;gap:6px;border-bottom:1px solid var(--line)}
+nav button{font:500 14px var(--body);color:var(--muted);background:none;border:none;border-bottom:2px solid transparent;padding:8px 12px;cursor:pointer;margin-bottom:-1px}
+nav button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--fit)}
+button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible{outline:2px solid var(--fit);outline-offset:2px}
+section{display:flex;flex-direction:column;gap:16px}
+h2{font-family:var(--display);font-size:22px;margin:0;text-wrap:balance}
+h3{font-size:15px;margin:0;font-weight:600}
+.lead{margin:0;color:var(--muted);max-width:72ch}
+.lab{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:820px){.lab{grid-template-columns:1fr}}
+.col{display:flex;flex-direction:column;gap:14px;min-width:0}
+.plot{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:8px;min-width:0}
+.plot svg{width:100%;height:auto;display:block}
+.box{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:12px 14px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.chk{display:flex;gap:8px;align-items:center;font-size:14px;cursor:pointer}
+.stats{display:grid;grid-template-columns:1fr auto;gap:4px 12px;font-size:14px}
+.stats span:nth-child(even){font-family:var(--mono);font-variant-numeric:tabular-nums;text-align:right}
+.btns{display:flex;flex-wrap:wrap;gap:8px}
+button.b{font:500 13px var(--body);background:var(--soft);color:var(--ink);border:1px solid var(--line);border-radius:4px;padding:6px 10px;cursor:pointer}
+button.b:hover{border-color:var(--fit)}
+.seg{display:flex;flex-wrap:wrap;border:1px solid var(--line);border-radius:5px;overflow:hidden;width:fit-content;max-width:100%}
+.seg button{font:500 13.5px var(--body);background:var(--panel);color:var(--muted);border:none;border-right:1px solid var(--line);padding:6px 11px;cursor:pointer}
+.seg button:last-child{border-right:none}
+.seg button[aria-pressed="true"]{background:var(--fit);color:var(--onk)}
+.legend{display:flex;flex-wrap:wrap;gap:12px;font-size:13px;color:var(--muted);padding:4px 6px 0}
+.legend i{display:inline-block;width:11px;height:11px;vertical-align:-1px;margin-right:5px;border-radius:2px}
+.legend i.ln{height:3px;width:18px;vertical-align:middle}
+.tip{font-size:13.5px;color:var(--muted);border-left:2px solid var(--line);padding-left:10px;margin:0}
+.say{font-size:15px;margin:0;border-left:3px solid var(--you);padding:2px 0 2px 10px}
+.tablewrap{overflow-x:auto}
+table{border-collapse:collapse;font-size:13.5px;width:100%}
+th,td{padding:5px 8px;border-bottom:1px solid var(--line);text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+th{font-weight:600;color:var(--muted);font-size:12.5px}
+th:first-child,td:first-child{text-align:left}
+td{font-family:var(--mono);font-size:13px}
+td.t{font-family:var(--body);font-size:13.5px}
+tr.tot td{font-weight:600;border-top:1px solid var(--muted)}
+table input{font:13px var(--mono);width:6.5em;text-align:right;padding:3px 5px;border:1px solid var(--line);border-radius:3px;background:var(--panel);color:var(--ink)}
+select{font:14px var(--body);padding:4px 6px;border:1px solid var(--line);border-radius:4px;background:var(--panel);color:var(--ink);max-width:100%}
+label.rng{display:grid;grid-template-columns:minmax(5.5em,auto) 1fr auto;gap:10px;align-items:center;font-size:14px}
+label.rng input{width:100%;accent-color:var(--you)}
+.val{font-family:var(--mono);font-size:13px;font-variant-numeric:tabular-nums;min-width:5ch;text-align:right}
+.code{font-family:var(--mono);font-size:13px;background:var(--soft);border:1px solid var(--line);border-radius:4px;padding:6px 8px;white-space:normal;overflow-wrap:anywhere}
+.strip{display:grid;grid-template-columns:1fr;gap:2px}
+ol.ex{margin:0;padding-left:0;list-style:none;counter-reset:ex;display:flex;flex-direction:column;gap:12px;max-width:80ch}
+ol.ex>li{counter-increment:ex;background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:12px 14px 12px 48px;position:relative}
+ol.ex>li::before{content:counter(ex);position:absolute;left:14px;top:11px;font-family:var(--display);font-weight:700;font-size:18px;color:var(--fit)}
+ol.ex .tag{font-size:11.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-left:6px;font-weight:500}
+ol.ex p{margin:4px 0}
+details{margin-top:6px}
+summary{cursor:pointer;color:var(--fit);font-size:14px;font-weight:500}
+details>div{margin-top:6px;font-size:14px;border-left:2px solid var(--fit);padding-left:10px}
+code{font-family:var(--mono);font-size:12.5px;background:var(--soft);padding:1px 4px;border-radius:3px}
+svg text{font-family:var(--body)}
+.ax{font:11px var(--mono);fill:var(--muted)}
+.al{font-size:12px;fill:var(--muted)}
+.ttl{font-size:12.5px;fill:var(--ink);font-weight:600}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="wrap">
+<header>
+  <h1>Časové řady v pohybu</h1>
+  <p>Interaktivní ukázky k přednášce o časových řadách: z čeho se řada skládá, kalendářní očištění a míry dynamiky, trend se sezónností, autokorelace a exponenciální vyrovnávání. Knoflíkárna, HDP a nezaměstnanost jsou z přednášky, ostatní data jsou simulovaná.</p>
+</header>
+
+<nav role="tablist">
+  <button role="tab" aria-selected="true" data-tab="p1">1 · Složky řady</button>
+  <button role="tab" aria-selected="false" data-tab="p2">2 · Průměry a dynamika</button>
+  <button role="tab" aria-selected="false" data-tab="p3">3 · Trend a sezónnost</button>
+  <button role="tab" aria-selected="false" data-tab="p4">4 · Autokorelace</button>
+  <button role="tab" aria-selected="false" data-tab="p5">5 · Exponenciální vyrovnávání</button>
+  <button role="tab" aria-selected="false" data-tab="p6">Cvičení</button>
+</nav>
+
+<!-- TAB 1 -->
+<section id="p1">
+  <div><h2>Z čeho se skládá časová řada</h2>
+  <p class="lead">Měsíční tržby smyšlené prodejny 2018–2025 složené ze čtyř složek: trend T, sezónnost S, cyklus C a náhoda ε. Posuvníky měňte jednotlivé složky a sledujte, jak se změní výsledná řada. U multiplikativního modelu roste sezónní výkyv spolu s trendem.</p></div>
+  <div class="lab">
+    <div class="col">
+      <div class="plot"><svg id="s1" viewBox="0 0 640 260" role="img" aria-label="Výsledná časová řada"></svg></div>
+      <div class="plot strip"><svg id="s1T" viewBox="0 0 640 74" aria-label="Trend"></svg><svg id="s1S" viewBox="0 0 640 74" aria-label="Sezónnost"></svg><svg id="s1C" viewBox="0 0 640 74" aria-label="Cyklus"></svg><svg id="s1E" viewBox="0 0 640 86" aria-label="Náhoda"></svg></div>
+    </div>
+    <div class="col">
+      <div class="box">
+        <div class="seg" id="m1" role="group" aria-label="Typ modelu"><button data-m="add" aria-pressed="true">Aditivní</button><button data-m="mul" aria-pressed="false">Multiplikativní</button></div>
+        <p class="tip" id="m1tip"></p>
+        <label class="rng" for="t1">trend / měsíc<input type="range" id="t1" min="-1" max="3" step="0.1" value="1"><span class="val" id="t1v"></span></label>
+        <label class="rng" for="a1">sezónnost<input type="range" id="a1" min="0" max="40" step="1" value="15"><span class="val" id="a1v"></span></label>
+        <label class="rng" for="c1">cyklus (4 roky)<input type="range" id="c1" min="0" max="25" step="1" value="0"><span class="val" id="c1v"></span></label>
+        <label class="rng" for="e1">náhoda σ<input type="range" id="e1" min="0" max="20" step="1" value="5"><span class="val" id="e1v"></span></label>
+        <div class="btns"><button class="b" id="n1">Nová náhodná složka</button></div>
+      </div>
+      <div class="box">
+        <h3>Co je co</h3>
+        <div class="stats" id="st1"></div>
+        <p class="tip">Bez trendu je řada stacionární, s trendem nestacionární. Nastavte trend 0, sezónnost 0 a cyklus 0: zbude jen náhodný šum.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TAB 2 -->
+<section id="p2" hidden>
+  <div><h2>Kalendářní očištění</h2>
+  <p class="lead">Tržby knoflíkárny za rok (přednáška, slide 7). Měsíce mají různý počet dní, takže únor vypadá slabší jen proto, že je kratší. Očištěná tržba = tržba · (365/12) / počet dní.</p></div>
+  <div class="lab">
+    <div class="plot"><svg id="s2a" viewBox="0 0 640 280" role="img" aria-label="Surové a očištěné tržby"></svg>
+      <div class="legend"><span><i style="background:var(--muted);opacity:.5"></i>naměřené tržby</span><span><i style="background:var(--fit)"></i>očištěné tržby</span></div>
+    </div>
+    <div class="col">
+      <div class="box">
+        <label class="chk"><input type="checkbox" id="leap"> Přestupný rok (únor 29 dní, rok 366 dní)</label>
+        <div class="stats" id="st2a"></div>
+        <div class="code" id="xl2a"></div>
+        <p class="tip">Prosinec je vysoký i po očištění, to už je skutečná sezónnost (Vánoce), ne délka měsíce.</p>
+      </div>
+    </div>
+  </div>
+
+  <div><h2>Míry dynamiky: HDP ČR 2012–2019</h2>
+  <p class="lead">Hodnoty HDP (mld. Kč) ze slidu 21 se dají přepsat. Tabulka počítá absolutní přírůstek Δyₜ, koeficient růstu kₜ a relativní přírůstek δₜ, pod ní jsou průměrné charakteristiky.</p></div>
+  <div class="lab">
+    <div class="col">
+      <div class="plot"><svg id="s2b" viewBox="0 0 640 260" role="img" aria-label="HDP a jeho extrapolace"></svg>
+        <div class="legend"><span><i class="ln" style="background:var(--fit)"></i>HDP</span><span><i class="ln" style="background:var(--you)"></i>pokračování s průměrným Δ</span><span><i class="ln" style="background:var(--ok)"></i>pokračování s průměrným k</span></div>
+      </div>
+      <div class="box"><div class="tablewrap"><table id="t2b"></table></div></div>
+    </div>
+    <div class="col">
+      <div class="box"><h3>Průměrné charakteristiky</h3><div class="stats" id="st2b"></div></div>
+      <div class="box">
+        <h3>Proč geometrický průměr</h3>
+        <p class="tip" id="geo2b"></p>
+      </div>
+    </div>
+  </div>
+
+  <div><h2>Průměr okamžikové řady</h2>
+  <p class="lead">Počet nezaměstnaných na konci každého měsíce roku 2019 (slide 23). Je to okamžiková řada, proto se místo prostého průměru používá chronologický průměr. Ten počítá s tím, že stav mezi dvěma měřeními je zhruba průměrem obou krajních hodnot, a intervaly váží počtem dní.</p></div>
+  <div class="lab">
+    <div class="plot"><svg id="s2c" viewBox="0 0 640 240" role="img" aria-label="Počet nezaměstnaných 2019"></svg>
+      <div class="legend"><span><i class="ln" style="background:var(--fit)"></i>stav ke konci měsíce</span><span><i class="ln" style="background:var(--you)"></i>prostý průměr</span><span><i class="ln" style="background:var(--ok)"></i>chronologický průměr</span></div>
+    </div>
+    <div class="col"><div class="box"><div class="stats" id="st2c"></div><p class="tip" id="tip2c"></p></div></div>
+  </div>
+</section>
+
+<!-- TAB 3 -->
+<section id="p3" hidden>
+  <div><h2>Trend, sezónní index a předpověď</h2>
+  <p class="lead">Postup ze slidu 49: odhadneme trend regresí, spočítáme poměr skutečnosti k trendu, zprůměrujeme ho za každý měsíc (sezónní index) a z trendu a indexu předpovídáme. Pseudopředpověď schová posledních 12 měsíců a zkontroluje, jak by model předpověděl data, která už známe.</p></div>
+  <div class="lab">
+    <div class="col">
+      <div class="plot"><svg id="s3" viewBox="0 0 640 300" role="img" aria-label="Časová řada s trendem a předpovědí"></svg>
+        <div class="legend" id="leg3"></div>
+      </div>
+      <div class="plot"><svg id="s3i" viewBox="0 0 640 170" role="img" aria-label="Sezónní indexy"></svg></div>
+      <div class="plot"><svg id="s3r" viewBox="0 0 640 150" role="img" aria-label="Rezidua"></svg></div>
+    </div>
+    <div class="col">
+      <div class="box">
+        <label for="d3" class="chk" style="cursor:default">Data <select id="d3">
+          <option value="shop">Tržby e-shopu 2021–2025 (mil. Kč)</option>
+          <option value="temp">Průměrná měsíční teplota (°C)</option>
+          <option value="pnz">Vklady do penzijka (mil. Kč)</option>
+        </select></label>
+        <div class="seg" id="m3" role="group" aria-label="Typ dekompozice"><button data-m="mul" aria-pressed="true">Multiplikativní</button><button data-m="add" aria-pressed="false">Aditivní</button></div>
+        <label for="tr3" class="chk" style="cursor:default">Trend <select id="tr3">
+          <option value="lin">Lineární  b₀ + b₁t</option>
+          <option value="exp">Exponenciální  b₀·b₁ᵗ</option>
+          <option value="par">Parabolický  b₀ + b₁t + b₂t²</option>
+          <option value="log">Logaritmický  b₀ + b₁ ln t</option>
+        </select></label>
+        <label for="ma3" class="chk" style="cursor:default">Klouzavý průměr <select id="ma3">
+          <option value="0">nezobrazovat</option><option value="3">3 body</option><option value="5">5 bodů</option><option value="7">7 bodů</option><option value="12">12 měsíců (centrovaný)</option>
+        </select></label>
+        <label class="chk"><input type="checkbox" id="ds3"> Ukázat sezónně očištěnou řadu</label>
+        <label class="chk"><input type="checkbox" id="fc3" checked> Předpověď na 12 měsíců</label>
+        <label class="chk"><input type="checkbox" id="ps3"> Pseudopředpověď (skrýt posledních 12 měsíců)</label>
+      </div>
+      <div class="box"><div class="code" id="eq3"></div><div class="stats" id="st3"></div><p class="say" id="say3"></p></div>
+    </div>
+  </div>
+</section>
+
+<!-- TAB 4 -->
+<section id="p4" hidden>
+  <div><h2>Má řada paměť?</h2>
+  <p class="lead">Autokorelace je korelace řady se sebou samou posunutou o k kroků (lag). Vyberte proces a podívejte se na bodový graf yₜ proti yₜ₋ₖ a na autokorelační funkce ACF a PACF. Sloupce mimo šedý pás (±2/√n) jsou větší, než by vznikly náhodou.</p></div>
+  <div class="lab">
+    <div class="col">
+      <div class="plot"><svg id="s4" viewBox="0 0 640 200" role="img" aria-label="Simulovaná časová řada"></svg></div>
+      <div class="lab" style="grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px">
+        <div class="plot"><svg id="s4s" viewBox="0 0 300 300" role="img" aria-label="Bodový graf y_t proti y_t-k"></svg></div>
+        <div class="col" style="gap:8px">
+          <div class="plot"><svg id="s4a" viewBox="0 0 300 145" role="img" aria-label="ACF"></svg></div>
+          <div class="plot"><svg id="s4p" viewBox="0 0 300 145" role="img" aria-label="PACF"></svg></div>
+        </div>
+      </div>
+    </div>
+    <div class="col">
+      <div class="box">
+        <label for="pr4" class="chk" style="cursor:default">Proces <select id="pr4">
+          <option value="wn">Náhodný šum</option>
+          <option value="ar" selected>AR(1): yₜ = φ·yₜ₋₁ + εₜ</option>
+          <option value="ma">MA(1): yₜ = εₜ + θ·εₜ₋₁</option>
+          <option value="rw">Náhodná procházka (cena akcie)</option>
+          <option value="se">Sezónní řada (perioda 12)</option>
+        </select></label>
+        <label class="rng" for="ph4" id="ph4L">φ<input type="range" id="ph4" min="-0.95" max="0.95" step="0.05" value="0.8"><span class="val" id="ph4v"></span></label>
+        <label class="rng" for="lag4">lag k<input type="range" id="lag4" min="1" max="12" step="1" value="1"><span class="val" id="lag4v"></span></label>
+        <div class="btns"><button class="b" id="n4">Nová data</button></div>
+        <p class="say" id="say4"></p>
+      </div>
+      <div class="box">
+        <h3>Jak poznat proces (slide 65)</h3>
+        <div class="tablewrap"><table><thead><tr><th>Proces</th><th>ACF</th><th>PACF</th></tr></thead><tbody>
+          <tr><td class="t">šum</td><td class="t">nic</td><td class="t">nic</td></tr>
+          <tr><td class="t">AR(1)</td><td class="t">pomalu klesá</td><td class="t">jen lag 1</td></tr>
+          <tr><td class="t">MA(1)</td><td class="t">jen lag 1</td><td class="t">pomalu klesá</td></tr>
+          <tr><td class="t">procházka</td><td class="t">skoro 1, velmi pomalu klesá</td><td class="t">jen lag 1 ≈ 1</td></tr>
+        </tbody></table></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TAB 5 -->
+<section id="p5" hidden>
+  <div><h2>Exponenciální vyrovnávání</h2>
+  <p class="lead">Předpověď na další období je vážený průměr minulých hodnot, novější mají větší váhu: ŷₜ₊₁ = α·yₜ + (1 − α)·ŷₜ. Malé α hodně vyhlazuje a pomalu reaguje na změny, velké α reaguje rychle, ale přenáší i náhodný šum. Holtův model přidává trend.</p></div>
+  <div class="lab">
+    <div class="col">
+      <div class="plot"><svg id="s5" viewBox="0 0 640 300" role="img" aria-label="Řada a exponenciální vyrovnání"></svg>
+        <div class="legend"><span><i class="ln" style="background:var(--muted)"></i>data</span><span><i class="ln" style="background:var(--you)"></i>předpověď o krok dopředu</span><span><i class="ln" style="background:var(--ok)"></i>předpověď do budoucna</span></div>
+      </div>
+      <div class="plot"><svg id="s5w" viewBox="0 0 640 150" role="img" aria-label="Váhy minulých pozorování"></svg></div>
+    </div>
+    <div class="col">
+      <div class="box">
+        <label for="d5" class="chk" style="cursor:default">Data <select id="d5">
+          <option value="lvl">Žádosti o úvěr týdně (skok po kampani)</option>
+          <option value="trd">Aktivní uživatelé aplikace (roste)</option>
+        </select></label>
+        <div class="seg" id="m5" role="group" aria-label="Model"><button data-m="ses" aria-pressed="true">Jednoduché (SES)</button><button data-m="holt" aria-pressed="false">Holt (s trendem)</button></div>
+        <label class="rng" for="al5">α<input type="range" id="al5" min="0.02" max="1" step="0.02" value="0.3"><span class="val" id="al5v"></span></label>
+        <label class="rng" for="be5" id="be5L">β (trend)<input type="range" id="be5" min="0.02" max="1" step="0.02" value="0.1"><span class="val" id="be5v"></span></label>
+        <div class="btns"><button class="b" id="best5">Najít α s nejmenší RMSE</button></div>
+      </div>
+      <div class="box"><div class="stats" id="st5"></div><p class="say" id="say5"></p>
+        <p class="tip">MAE bere všechny chyby stejně. RMSE víc trestá velké chyby. Obě jsou v jednotkách dat.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- EXERCISES -->
+<section id="p6" hidden>
+  <div><h2>Cvičení do přednášky</h2>
+  <p class="lead">Úlohy se dají vyřešit na této stránce. Čísla v řešeních počítá stránka stejnými funkcemi jako grafy.</p></div>
+  <ol class="ex" id="ex"></ol>
+</section>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+const fx=(x,d=2)=>isFinite(x)?(x<0?'−':'')+Math.abs(x).toFixed(d).replace('.',','):'–';
+const pc=(x,d=1)=>fx(100*x,d)+' %';
+const th=(x,d=0)=>isFinite(x)?(x<0?'−':'')+Math.abs(x).toLocaleString('cs-CZ',{minimumFractionDigits:d,maximumFractionDigits:d}):'–';
+const xl=x=>String(+(+x).toFixed(4)).replace('.',',');
+const sum=a=>a.reduce((s,v)=>s+v,0),mean=a=>sum(a)/a.length;
+function rng(seed){let a=seed>>>0;return()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function gauss(r){let u=0,v=0;while(!u)u=r();while(!v)v=r();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v)}
+const MON=['led','úno','bře','dub','kvě','čvn','čvc','srp','zář','říj','lis','pro'];
+const MONF=['Leden','Únor','Březen','Duben','Květen','Červen','Červenec','Srpen','Září','Říjen','Listopad','Prosinec'];
+
+/* ---------- SVG helpers ---------- */
+const niceStep=(r,c=5)=>{const s=r/c,m=Math.pow(10,Math.floor(Math.log10(s))),f=s/m;return (f<1.5?1:f<3?2:f<7?5:10)*m};
+const ticks=(a,b,c=5)=>{if(!(b>a))return[a];const s=niceStep(b-a,c),o=[];for(let v=Math.ceil(a/s-1e-9)*s;v<=b+1e-9;v+=s)o.push(+v.toFixed(10));return o};
+const tf=v=>Math.abs(v)>=1000?Math.round(v).toLocaleString('cs-CZ'):String(+v.toFixed(3)).replace('.',',');
+const R=(x,y,w,h,f,ex='')=>`<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${Math.max(0,w).toFixed(1)}" height="${Math.max(0,h).toFixed(1)}" fill="${f}" ${ex}/>`;
+const T=(x,y,s,cl,ex='')=>`<text x="${x.toFixed(1)}" y="${y.toFixed(1)}" class="${cl}" ${ex}>${s}</text>`;
+const Ln=(x1,y1,x2,y2,st,ex='')=>`<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" stroke="${st}" ${ex}/>`;
+function frame(o){const{W,H,L,Tp,Rt,B,x0,x1,y0,y1}=o,pw=W-L-Rt,ph=H-Tp-B;
+  const X=v=>L+pw*(v-x0)/(x1-x0),Y=v=>Tp+ph-ph*(v-y0)/(y1-y0);let g='';
+  (o.yt||ticks(y0,y1,4)).forEach(v=>{g+=Ln(L,Y(v),W-Rt,Y(v),'var(--line)')+T(L-6,Y(v)+4,(o.yf||tf)(v),'ax','text-anchor="end"')});
+  (o.xt||ticks(x0,x1,6)).forEach(v=>{const lab=(o.xf||tf)(v);if(lab!==null)g+=T(X(v)+(o.xoff||0),H-B+15,lab,'ax','text-anchor="middle"')});
+  if(o.xl)g+=T(L+pw/2,H-3,o.xl,'al','text-anchor="middle"');
+  if(o.title)g+=T(L,Tp-6,o.title,'ttl');
+  return{X,Y,g,pw,ph}}
+const poly=(f,xs,ys,c,ex='')=>{const p=[];xs.forEach((x,i)=>{if(ys[i]!=null&&isFinite(ys[i]))p.push(f.X(x).toFixed(1)+','+f.Y(ys[i]).toFixed(1));else if(p.length)p.push('M')});
+  return p.join(' ').split(' M').filter(s=>s.trim()).map(s=>`<polyline points="${s.replace(/^M ?/,'')}" fill="none" stroke="${c}" ${ex}/>`).join('')};
+const ext=a=>{const v=a.filter(x=>x!=null&&isFinite(x));return[Math.min(...v),Math.max(...v)]};
+const pad=([a,b],p=.06)=>{const d=(b-a)||1;return[a-d*p,b+d*p]};
+
+/* ---------- regression ---------- */
+function ols(xs,ys){const n=xs.length,mx=mean(xs),my=mean(ys);let sxy=0,sxx=0,syy=0;xs.forEach((x,i)=>{sxy+=(x-mx)*(ys[i]-my);sxx+=(x-mx)**2;syy+=(ys[i]-my)**2});const b1=sxy/sxx;return{b0:my-b1*mx,b1,r:sxy/Math.sqrt(sxx*syy)}}
+function quad(xs,ys){let S=[0,0,0,0,0],Y=[0,0,0];xs.forEach((x,i)=>{for(let k=0;k<5;k++)S[k]+=x**k;for(let k=0;k<3;k++)Y[k]+=ys[i]*x**k});
+  const A=[[S[0],S[1],S[2],Y[0]],[S[1],S[2],S[3],Y[1]],[S[2],S[3],S[4],Y[2]]];
+  for(let i=0;i<3;i++){let m=i;for(let j=i+1;j<3;j++)if(Math.abs(A[j][i])>Math.abs(A[m][i]))m=j;[A[i],A[m]]=[A[m],A[i]];for(let j=0;j<3;j++)if(j!==i){const f=A[j][i]/A[i][i];for(let k=i;k<4;k++)A[j][k]-=f*A[i][k]}}
+  return A.map((r,i)=>r[3]/r[i])}
+function fitTrend(type,ts,ys){
+  if(type==='lin'){const o=ols(ts,ys);return{f:t=>o.b0+o.b1*t,eq:`T = ${xl(o.b0)} + ${xl(o.b1)}·t`,b:[o.b0,o.b1]}}
+  if(type==='exp'){if(ys.some(v=>v<=0))return null;const o=ols(ts,ys.map(Math.log)),b0=Math.exp(o.b0),b1=Math.exp(o.b1);return{f:t=>b0*b1**t,eq:`T = ${xl(b0)}·${xl(b1)}ᵗ`,b:[b0,b1]}}
+  if(type==='par'){const[a,b,c]=quad(ts,ys);return{f:t=>a+b*t+c*t*t,eq:`T = ${xl(a)} + ${xl(b)}·t + ${xl(c)}·t²`,b:[a,b,c]}}
+  if(type==='log'){const o=ols(ts.map(Math.log),ys);return{f:t=>o.b0+o.b1*Math.log(t),eq:`T = ${xl(o.b0)} + ${xl(o.b1)}·ln t`,b:[o.b0,o.b1]}}}
+const r2=(y,f)=>{const m=mean(y);return 1-sum(y.map((v,i)=>(v-f[i])**2))/sum(y.map(v=>(v-m)**2))};
+function acf(y,K){const n=y.length,m=mean(y),d=sum(y.map(v=>(v-m)**2));const r=[];for(let k=1;k<=K;k++){let s=0;for(let t=k;t<n;t++)s+=(y[t]-m)*(y[t-k]-m);r.push(s/d)}return r}
+function pacf(r){const K=r.length,out=[r[0]];let phi=[r[0]];for(let k=2;k<=K;k++){let num=r[k-1]-sum(phi.map((p,j)=>p*r[k-2-j])),den=1-sum(phi.map((p,j)=>p*r[j]));const pk=num/den;phi=phi.map((p,j)=>p-pk*phi[k-2-j]).concat(pk);out.push(pk)}return out}
+const yearTicks=(N,y0)=>{const t=[];for(let i=0;i<N;i+=12)t.push(i+1);return{xt:t,xf:v=>String(y0+Math.floor((v-1)/12))}};
+
+/* =========================================================
+   TAB 1
+   ========================================================= */
+const S1={m:'add',seed:7};
+const SEAS=[-.7,-.8,-.3,0,.2,.1,-.1,-.2,.2,.4,.6,1.4];const sm=mean(SEAS);const SEASN=SEAS.map(v=>v-sm);const smx=Math.max(...SEASN.map(Math.abs));
+function render1(){
+  const tr=+$('t1').value,am=+$('a1').value,cy=+$('c1').value,sg=+$('e1').value,N=96,r=rng(S1.seed);
+  ['t1','a1','c1','e1'].forEach((k,i)=>$(k+'v').textContent=[fx(tr,1),am,cy,sg][i]+(S1.m==='mul'&&k!=='t1'?' %':''));
+  const ts=[...Array(N)].map((_,i)=>i+1),eps=ts.map(()=>gauss(r));
+  const Tt=ts.map(t=>100+tr*t),St=ts.map(t=>SEASN[(t-1)%12]/smx),Ct=ts.map(t=>Math.sin(2*Math.PI*t/48)),Et=eps;
+  let y,comp;
+  if(S1.m==='add'){comp=[Tt,St.map(v=>v*am),Ct.map(v=>v*cy),Et.map(v=>v*sg)];y=ts.map((_,i)=>comp[0][i]+comp[1][i]+comp[2][i]+comp[3][i])}
+  else{comp=[Tt,St.map(v=>1+v*am/100),Ct.map(v=>1+v*cy/100),Et.map(v=>1+v*sg/100)];y=ts.map((_,i)=>comp[0][i]*comp[1][i]*comp[2][i]*comp[3][i])}
+  $('m1tip').textContent=S1.m==='add'?'yₜ = Tₜ + Sₜ + Cₜ + εₜ. Složky jsou v tisících Kč a sčítají se.':'yₜ = Tₜ · Sₜ · Cₜ · εₜ. Sezónnost, cyklus a náhoda jsou procentní odchylky od trendu.';
+  const yt=yearTicks(N,2018);
+  let f=frame({W:640,H:260,L:48,Tp:22,Rt:10,B:26,x0:1,x1:N+1,y0:pad(ext(y))[0],y1:pad(ext(y))[1],...yt,xoff:21,title:'Tržby (tis. Kč)'}),g=f.g;
+  g+=poly(f,ts,Tt,'var(--muted)','stroke-width="1.5" stroke-dasharray="5 4"')+poly(f,ts,y,'var(--fit)','stroke-width="2"');
+  $('s1').innerHTML=g;
+  const names=[['Trend T','var(--muted)'],['Sezónnost S','var(--you)'],['Cyklus C','var(--ok)'],['Náhoda ε','var(--c4)']];
+  ['s1T','s1S','s1C','s1E'].forEach((id,k)=>{const v=comp[k],last=k===3,H=last?86:74,base=S1.m==='add'?(k===0?null:0):(k===0?null:1);
+    let[a,b]=ext(v);if(base!=null){const m=Math.max(Math.abs(a-base),Math.abs(b-base),S1.m==='add'?1:.01);a=base-m;b=base+m}else[a,b]=pad([a,b]);
+    const fr=frame({W:640,H,L:48,Tp:18,Rt:10,B:last?26:8,x0:1,x1:N+1,y0:a,y1:b,yt:base!=null?[base]:ticks(a,b,2),...(last?yt:{xt:[]}),xoff:21,title:names[k][0],yf:v=>S1.m==='mul'&&k>0?fx(v,2):tf(v)});
+    $(id).innerHTML=fr.g+poly(fr,ts,v,names[k][1],'stroke-width="1.8"')});
+  const half=y.slice(0,12),last=y.slice(-12),amp=a=>Math.max(...a)-Math.min(...a);
+  $('st1').innerHTML=`<span>rozkmit v roce 2018</span><span>${fx(amp(half),1)}</span><span>rozkmit v roce 2025</span><span>${fx(amp(last),1)}</span><span>průměr 2018 → 2025</span><span>${fx(mean(half),0)} → ${fx(mean(last),0)}</span>`;
+}
+$('m1').onclick=e=>{const b=e.target.closest('button');if(!b)return;S1.m=b.dataset.m;[...$('m1').children].forEach(x=>x.setAttribute('aria-pressed',x===b));render1()};
+['t1','a1','c1','e1'].forEach(k=>$(k).oninput=render1);
+$('n1').onclick=()=>{S1.seed=Math.floor(Math.random()*1e9);render1()};
+
+/* =========================================================
+   TAB 2
+   ========================================================= */
+const KNOF=[2602,1920,2509,2380,2569,2297,2746,2569,2411,2523,2310,4450];
+function render2a(){
+  const leap=$('leap').checked,days=[31,leap?29:28,31,30,31,30,31,31,30,31,30,31],avg=(leap?366:365)/12;
+  const cl=KNOF.map((v,i)=>v*avg/days[i]);
+  const f=frame({W:640,H:280,L:48,Tp:14,Rt:10,B:28,x0:0,x1:12,y0:0,y1:4800,xt:[...Array(12)].map((_,i)=>i+.5),xf:v=>MON[Math.floor(v)]});let g=f.g;
+  const bw=f.pw/12;
+  KNOF.forEach((v,i)=>{g+=R(f.X(i)+bw*.12,f.Y(v),bw*.36,f.Y(0)-f.Y(v),'var(--muted)','opacity=".45"');g+=R(f.X(i)+bw*.5,f.Y(cl[i]),bw*.36,f.Y(0)-f.Y(cl[i]),'var(--fit)')});
+  $('s2a').innerHTML=g;
+  $('st2a').innerHTML=`<span>průměrný měsíc</span><span>${fx(avg,3)} dne</span><span>únor naměřeně → očištěně</span><span>${th(KNOF[1])} → ${th(cl[1])}</span><span>leden naměřeně → očištěně</span><span>${th(KNOF[0])} → ${th(cl[0])}</span><span>rozdíl leden − únor</span><span>${th(KNOF[0]-KNOF[1])} → ${th(cl[0]-cl[1])}</span><span>součet za rok</span><span>${th(sum(KNOF))} → ${th(sum(cl))}</span>`;
+  $('xl2a').textContent=`Excel (tržba v B2, počet dní v C2): =B2*(${leap?366:365}/12)/C2`;
+}
+$('leap').onchange=render2a;
+let HDP=[[2012,4042],[2013,4077],[2014,4261],[2015,4477],[2016,4713],[2017,5050],[2018,5310],[2019,5647]];
+function dyn(y){const n=y.length,d=y.map((v,i)=>i?v-y[i-1]:null),k=y.map((v,i)=>i?v/y[i-1]:null);
+  const dbar=(y[n-1]-y[0])/(n-1),kbar=Math.pow(y[n-1]/y[0],1/(n-1)),karith=mean(k.slice(1));return{d,k,dbar,kbar,karith,mean:mean(y)}}
+function render2b(full){
+  const y=HDP.map(r=>r[1]),yrs=HDP.map(r=>r[0]),D=dyn(y);
+  if(full!==false){$('t2b').innerHTML='<thead><tr><th>Rok</th><th>HDP yₜ</th><th>Δyₜ = yₜ − yₜ₋₁</th><th>kₜ = yₜ / yₜ₋₁</th><th>δₜ = kₜ − 1</th></tr></thead><tbody>'+
+    HDP.map(([r,v],i)=>`<tr><td class="t">${r}</td><td><input type="number" data-i="${i}" value="${v}" aria-label="HDP ${r}"></td><td id="hd${i}"></td><td id="hk${i}"></td><td id="hq${i}"></td></tr>`).join('')+'</tbody>'}
+  HDP.forEach((_,i)=>{$('hd'+i).textContent=i?th(D.d[i]):'–';$('hk'+i).textContent=i?fx(D.k[i],3):'–';$('hq'+i).textContent=i?pc(D.k[i]-1,1):'–'});
+  $('st2b').innerHTML=`<span>prostý průměr ȳ</span><span>${fx(D.mean,2)}</span><span>průměrný abs. přírůstek Δ̄ = (yₙ − y₁)/(n − 1)</span><span>${fx(D.dbar,1)}</span>`+
+   `<span>průměrný koef. růstu k̄ = (yₙ/y₁)^(1/(n−1))</span><span>${fx(D.kbar,4)}</span><span>průměrný rel. přírůstek δ̄ = k̄ − 1</span><span>${pc(D.kbar-1,2)}</span>`+
+   `<span>předpověď ${yrs.at(-1)+1} s Δ̄</span><span>${th(y.at(-1)+D.dbar)}</span><span>předpověď ${yrs.at(-1)+1} s k̄</span><span>${th(y.at(-1)*D.kbar)}</span>`;
+  $('geo2b').innerHTML=`Aritmetický průměr koeficientů je ${fx(D.karith,4)}, geometrický ${fx(D.kbar,4)}. Jen s geometrickým se z ${th(y[0])} dostaneme přesně na ${th(y.at(-1))}: ${th(y[0])}·${fx(D.kbar,4)}^${y.length-1} = ${th(y[0]*D.kbar**(y.length-1))}. S aritmetickým bychom skončili na ${th(y[0]*D.karith**(y.length-1))}. Růst se násobí, ne sčítá.`;
+  const H=5,xs=[...yrs,...[...Array(H)].map((_,i)=>yrs.at(-1)+i+1)],fa=[...y.map((_,i)=>i===y.length-1?y[i]:null),...[...Array(H)].map((_,i)=>y.at(-1)+D.dbar*(i+1))],fk=[...y.map((_,i)=>i===y.length-1?y[i]:null),...[...Array(H)].map((_,i)=>y.at(-1)*D.kbar**(i+1))];
+  const[a,b]=pad(ext([...y,...fa,...fk]));const f=frame({W:640,H:260,L:52,Tp:20,Rt:12,B:26,x0:yrs[0]-.3,x1:xs.at(-1)+.3,y0:a,y1:b,xt:xs,xf:v=>String(v),title:'HDP (mld. Kč)'});
+  let g=f.g+Ln(f.X(yrs.at(-1)+.5),20,f.X(yrs.at(-1)+.5),f.Y(a),'var(--line)','stroke-dasharray="3 3"');
+  g+=poly(f,xs,fa,'var(--you)','stroke-width="2" stroke-dasharray="6 4"')+poly(f,xs,fk,'var(--ok)','stroke-width="2" stroke-dasharray="6 4"')+poly(f,yrs,y,'var(--fit)','stroke-width="2.5"');
+  y.forEach((v,i)=>g+=`<circle cx="${f.X(yrs[i])}" cy="${f.Y(v)}" r="3.5" fill="var(--fit)"/>`);
+  $('s2b').innerHTML=g;
+}
+$('t2b').addEventListener('input',e=>{const i=+e.target.dataset.i;const v=+e.target.value;if(v>0){HDP[i][1]=v;render2b(false)}});
+const NEZ=[245057,241417,227053,209828,200675,195700,205120,204789,200000,196518,197289,215532];
+const NEZD=[31,28,31,30,31,30,31,31,30,31,30,31];
+function chrono(y,d){let s=0,w=0;for(let i=1;i<y.length;i++){s+=(y[i-1]+y[i])/2*d[i];w+=d[i]}return s/w}
+function render2c(){
+  const pm=mean(NEZ),ch=chrono(NEZ,NEZD),ts=NEZ.map((_,i)=>i+1);
+  const f=frame({W:640,H:240,L:62,Tp:14,Rt:12,B:26,x0:.5,x1:12.5,y0:180000,y1:255000,xt:ts,xf:v=>MON[v-1]});let g=f.g;
+  g+=Ln(f.X(.5),f.Y(pm),f.X(12.5),f.Y(pm),'var(--you)','stroke-width="2" stroke-dasharray="6 4"')+Ln(f.X(.5),f.Y(ch),f.X(12.5),f.Y(ch),'var(--ok)','stroke-width="2" stroke-dasharray="6 4"');
+  g+=poly(f,ts,NEZ,'var(--fit)','stroke-width="2.5"');NEZ.forEach((v,i)=>g+=`<circle cx="${f.X(i+1)}" cy="${f.Y(v)}" r="3.5" fill="var(--fit)"/>`);
+  $('s2c').innerHTML=g;
+  $('st2c').innerHTML=`<span>prostý průměr (12 hodnot)</span><span>${th(pm)}</span><span>chronologický průměr</span><span>${th(ch)}</span><span>rozdíl</span><span>${th(pm-ch)}</span><span>počet intervalů</span><span>11 (od 31. 1. do 31. 12.)</span>`;
+  $('tip2c').textContent='Chronologický průměr = Σ (yₜ₋₁ + yₜ)/2 · dₜ / Σ dₜ, kde dₜ je počet dní mezi měřeními. První a poslední hodnota mají poloviční váhu, protože každá ohraničuje jen jeden interval. Proto vychází níž: lednová a únorová hodnota jsou vysoké, ale lednová se počítá jen napůl.';
+}
+
+/* =========================================================
+   TAB 3
+   ========================================================= */
+const DS3={
+  shop:{unit:'mil. Kč',y0:2021,def:'mul',gen:r=>{const I=[.82,.78,.88,.92,.95,.9,.86,.9,1.0,1.05,1.32,1.62],m=mean(I);return[...Array(60)].map((_,i)=>{const t=i+1;return +((2+.035*t)*I[i%12]/m*(1+.04*gauss(r))).toFixed(3)})}},
+  temp:{unit:'°C',y0:2021,def:'add',gen:r=>{const M=[-2.5,-1.2,2.5,7.5,12.3,15.6,17.3,16.8,12.6,7.6,3,-1];return[...Array(60)].map((_,i)=>+(M[i%12]+.008*(i+1)+1.3*gauss(r)).toFixed(1))}},
+  pnz:{unit:'mil. Kč',y0:2021,def:'mul',gen:r=>{const I=[1.05,.93,.97,.96,.98,.97,.95,.96,.97,1,1.06,1.2],m=mean(I);return[...Array(60)].map((_,i)=>{const t=i+1;return +((40*Math.pow(1.012,t))*I[i%12]/m*(1+.03*gauss(r))).toFixed(2)})}}
+};
+const S3={key:'shop',m:'mul',y:[]};
+function loadD3(){const d=DS3[S3.key];S3.y=d.gen(rng(S3.key==='shop'?11:S3.key==='temp'?23:5));S3.m=d.def;[...$('m3').children].forEach(x=>x.setAttribute('aria-pressed',x.dataset.m===S3.m));render3()}
+function ma(y,k){const n=y.length,o=Array(n).fill(null);
+  if(k===12){for(let t=6;t<n-6;t++){let s=y[t-6]/2+y[t+6]/2;for(let j=t-5;j<=t+5;j++)s+=y[j];o[t]=s/12}return o}
+  const h=(k-1)/2;for(let t=h;t<n-h;t++){let s=0;for(let j=t-h;j<=t+h;j++)s+=y[j];o[t]=s/k}return o}
+function decomp(y,fitN,type,m){
+  const ts=y.slice(0,fitN).map((_,i)=>i+1),tr=fitTrend(type,ts,y.slice(0,fitN));if(!tr)return null;
+  const raw=Array(12).fill(0).map(()=>[]);ts.forEach((t,i)=>raw[i%12].push(m==='mul'?y[i]/tr.f(t):y[i]-tr.f(t)));
+  let I=raw.map(a=>mean(a));const mI=mean(I);I=I.map(v=>m==='mul'?v/mI:v-mI);
+  const fit=t=>m==='mul'?tr.f(t)*I[(t-1)%12]:tr.f(t)+I[(t-1)%12];
+  return{tr,I,fit}}
+function render3(){
+  const y=S3.y,N=y.length,d=DS3[S3.key],pseudo=$('ps3').checked,fitN=pseudo?N-12:N,type=$('tr3').value,m=S3.m,H=$('fc3').checked||pseudo?12:0;
+  const D=decomp(y,fitN,type,m);
+  const ts=y.map((_,i)=>i+1),all=[...Array(N+(pseudo?0:H))].map((_,i)=>i+1);
+  if(!D){$('s3').innerHTML=T(320,150,'Exponenciální trend potřebuje kladné hodnoty. Zvolte jiný trend.','al','text-anchor="middle"');$('s3i').innerHTML='';$('s3r').innerHTML='';$('eq3').textContent='';$('st3').innerHTML='';$('say3').textContent='Teplota bývá záporná, logaritmus záporného čísla neexistuje.';return}
+  const trend=all.map(t=>D.tr.f(t)),fitted=ts.map(t=>t<=fitN?D.fit(t):null),fc=all.map(t=>t>fitN?D.fit(t):null);
+  if(fitN<all.length)fc[fitN-1]=D.fit(fitN);
+  const mak=+$('ma3').value,mav=mak?ma(y,mak):null,desz=$('ds3').checked?ts.map(t=>m==='mul'?y[t-1]/D.I[(t-1)%12]:y[t-1]-D.I[(t-1)%12]):null;
+  const yt=yearTicks(all.length,d.y0);
+  const[a,b]=pad(ext([...y,...fc.filter(v=>v!=null),...trend]));
+  const f=frame({W:640,H:300,L:48,Tp:22,Rt:10,B:26,x0:1,x1:all.length+1,y0:a,y1:b,...yt,xoff:640/all.length*6*.9,title:d.unit});let g=f.g;
+  if(pseudo)g+=R(f.X(fitN+.5),22,f.X(N+1)-f.X(fitN+.5),f.Y(a)-22,'var(--soft)')+T(f.X(fitN+.5)+4,36,'skryté hodnoty','al');
+  else if(H)g+=R(f.X(N+.5),22,f.X(all.length+1)-f.X(N+.5),f.Y(a)-22,'var(--soft)')+T(f.X(N+.5)+4,36,'předpověď','al');
+  g+=poly(f,ts,y,'var(--muted)','stroke-width="1.6"');
+  if(desz)g+=poly(f,ts,desz,'var(--c5)','stroke-width="2"');
+  g+=poly(f,all,trend,'var(--fit)','stroke-width="2" stroke-dasharray="6 4"');
+  if(mav)g+=poly(f,ts,mav,'var(--ok)','stroke-width="2.4"');
+  if(H)g+=poly(f,all,fc,'var(--you)','stroke-width="2.4"');
+  $('s3').innerHTML=g;
+  $('leg3').innerHTML='<span><i class="ln" style="background:var(--muted)"></i>data</span><span><i class="ln" style="background:var(--fit)"></i>trend</span>'+(mav?'<span><i class="ln" style="background:var(--ok)"></i>klouzavý průměr</span>':'')+(desz?'<span><i class="ln" style="background:var(--c5)"></i>sezónně očištěno</span>':'')+(H?'<span><i class="ln" style="background:var(--you)"></i>trend × index (předpověď)</span>':'');
+  // indices
+  const base=m==='mul'?1:0,[ia,ib]=ext([...D.I,base]),sp=Math.max(Math.abs(ia-base),Math.abs(ib-base))*1.25||1;
+  const fi=frame({W:640,H:170,L:48,Tp:22,Rt:10,B:22,x0:0,x1:12,y0:base-sp,y1:base+sp,yt:ticks(base-sp,base+sp,4),xt:[...Array(12)].map((_,i)=>i+.5),xf:v=>MON[Math.floor(v)],title:m==='mul'?'Sezónní index Iⱼ (průměr = 1)':'Sezónní složka Sⱼ (průměr = 0)',yf:v=>fx(v,2)});let gi=fi.g;
+  const bw=fi.pw/12;D.I.forEach((v,i)=>{const y1=fi.Y(Math.max(v,base)),h=Math.abs(fi.Y(v)-fi.Y(base));gi+=R(fi.X(i)+bw*.18,y1,bw*.64,h,v>=base?'var(--fit)':'var(--you)');gi+=T(fi.X(i)+bw/2,v>=base?y1-3:y1+h+11,fx(v,2),'ax','text-anchor="middle" font-size="9.5"')});
+  gi+=Ln(fi.X(0),fi.Y(base),fi.X(12),fi.Y(base),'var(--muted)');
+  $('s3i').innerHTML=gi;
+  // residuals
+  const res=ts.slice(0,fitN).map(t=>y[t-1]-D.fit(t)),rr=Math.max(...res.map(Math.abs))*1.15;
+  const fr=frame({W:640,H:150,L:48,Tp:22,Rt:10,B:22,x0:1,x1:all.length+1,y0:-rr,y1:rr,yt:[-rr/1.15,0,rr/1.15].map(v=>+v.toPrecision(2)),...yt,xoff:640/all.length*6*.9,title:'Rezidua y − ŷ (na části použité k odhadu)'});
+  let gr=fr.g;res.forEach((v,i)=>gr+=Ln(fr.X(i+1),fr.Y(0),fr.X(i+1),fr.Y(v),'var(--c4)','stroke-width="2.5"'));gr+=Ln(fr.X(1),fr.Y(0),fr.X(all.length+1),fr.Y(0),'var(--muted)');
+  $('s3r').innerHTML=gr;
+  // stats
+  const yf=y.slice(0,fitN),trR2=r2(yf,ts.slice(0,fitN).map(t=>D.tr.f(t))),fR2=r2(yf,ts.slice(0,fitN).map(D.fit)),r1=acf(res,1)[0];
+  let s=`<span>R² samotného trendu</span><span>${fx(trR2,3)}</span><span>R² trend + sezónnost</span><span>${fx(fR2,3)}</span><span>MAE (odhad)</span><span>${fx(mean(res.map(Math.abs)),3)}</span><span>RMSE (odhad)</span><span>${fx(Math.sqrt(mean(res.map(v=>v*v))),3)}</span><span>autokorelace reziduí r₁</span><span>${fx(r1,2)}</span>`;
+  let say;
+  if(pseudo){const e=ts.slice(fitN).map(t=>y[t-1]-D.fit(t)),mae=mean(e.map(Math.abs)),rmse=Math.sqrt(mean(e.map(v=>v*v)));
+    s+=`<span>MAE pseudopředpovědi</span><span>${fx(mae,3)}</span><span>RMSE pseudopředpovědi</span><span>${fx(rmse,3)}</span>`;
+    say=`Na skrytých 12 měsících se předpověď mýlí v průměru o ${fx(mae,2)} ${d.unit}. Chyba na nových datech bývá větší než na datech, ze kterých jsme model odhadli.`}
+  else say=Math.abs(r1)>2/Math.sqrt(fitN)?`Rezidua mají autokorelaci r₁ = ${fx(r1,2)}: model nezachytil celou závislost v čase (slide 60).`:`Rezidua vypadají jako náhodný šum: kolísají kolem nuly a nemají zjevný vzor.`;
+  if(type==='par'&&H)say+=' Pozor, parabola se při extrapolaci může rychle stočit.';
+  $('st3').innerHTML=s;$('say3').textContent=say;
+  $('eq3').textContent=D.tr.eq+(m==='mul'?'   ŷ = T · Iⱼ':'   ŷ = T + Sⱼ');
+}
+$('d3').onchange=e=>{S3.key=e.target.value;loadD3()};
+$('m3').onclick=e=>{const b=e.target.closest('button');if(!b)return;S3.m=b.dataset.m;[...$('m3').children].forEach(x=>x.setAttribute('aria-pressed',x===b));render3()};
+['tr3','ma3','ds3','fc3','ps3'].forEach(k=>$(k).onchange=render3);
+
+/* =========================================================
+   TAB 4
+   ========================================================= */
+const S4={seed:3};
+function gen4(){const p=$('pr4').value,ph=+$('ph4').value,r=rng(S4.seed),n=150,e=[...Array(n+50)].map(()=>gauss(r));let y=[];
+  if(p==='wn')y=e.slice(50);
+  if(p==='ar'){let v=0;for(let t=0;t<n+50;t++){v=ph*v+e[t];if(t>=50)y.push(v)}}
+  if(p==='ma'){for(let t=50;t<n+50;t++)y.push(e[t]+ph*e[t-1])}
+  if(p==='rw'){let v=100;for(let t=50;t<n+50;t++){v+=e[t];y.push(v)}}
+  if(p==='se'){for(let t=0;t<n;t++)y.push(2*Math.sin(2*Math.PI*t/12)+e[t+50]*.8)}
+  return y}
+function bars(id,r,n,title){const W=300,H=145,f=frame({W,H,L:30,Tp:20,Rt:6,B:20,x0:.3,x1:r.length+.7,y0:-1,y1:1,yt:[-1,0,1],xt:[1,5,10,15,20].filter(v=>v<=r.length),title,yf:v=>tf(v)});
+  const c=2/Math.sqrt(n);let g=f.g+R(f.X(.3),f.Y(c),f.X(r.length+.7)-f.X(.3),f.Y(-c)-f.Y(c),'var(--soft)')+Ln(f.X(.3),f.Y(0),f.X(r.length+.7),f.Y(0),'var(--muted)');
+  r.forEach((v,i)=>g+=Ln(f.X(i+1),f.Y(0),f.X(i+1),f.Y(v),Math.abs(v)>c?'var(--fit)':'var(--muted)','stroke-width="4"'));$(id).innerHTML=g}
+function render4(){
+  const p=$('pr4').value,ph=+$('ph4').value,lag=+$('lag4').value;
+  $('ph4L').hidden=!(p==='ar'||p==='ma');$('ph4L').firstChild.textContent=p==='ma'?'θ':'φ';$('ph4v').textContent=fx(ph,2);$('lag4v').textContent=lag;
+  const y=gen4(),n=y.length,ts=y.map((_,i)=>i+1);
+  let f=frame({W:640,H:200,L:48,Tp:20,Rt:10,B:24,x0:1,x1:n,y0:pad(ext(y))[0],y1:pad(ext(y))[1],xl:'',title:'Simulovaná řada (150 období)'});
+  $('s4').innerHTML=f.g+poly(f,ts,y,'var(--fit)','stroke-width="1.6"');
+  const xs=y.slice(0,n-lag),ys=y.slice(lag),[a,b]=pad(ext(y)),rr=ols(xs,ys).r;
+  f=frame({W:300,H:300,L:40,Tp:20,Rt:8,B:30,x0:a,x1:b,y0:a,y1:b,xt:ticks(a,b,4),yt:ticks(a,b,4),xl:`yₜ₋${lag}`,title:`yₜ proti yₜ₋${lag}:  r = ${fx(rr,2)}`});
+  let g=f.g;xs.forEach((x,i)=>g+=`<circle cx="${f.X(x).toFixed(1)}" cy="${f.Y(ys[i]).toFixed(1)}" r="2.6" fill="var(--you)" opacity=".6"/>`);
+  $('s4s').innerHTML=g;
+  const r=acf(y,20),pr=pacf(r);bars('s4a',r,n,'ACF');bars('s4p',pr,n,'PACF');
+  const S={wn:'Šum nemá paměť: hodnota dnes nic neříká o zítřku. ACF i PACF zůstávají v šedém pásu.',
+    ar:ph>0?`Kladné φ: vysoká hodnota bývá následována vysokou. ACF klesá zhruba jako φᵏ (${fx(ph,2)}, ${fx(ph*ph,2)}, ${fx(ph**3,2)}…), PACF má jen první sloupec.`:ph<0?'Záporné φ: vysoké a nízké hodnoty se střídají, ACF střídá znaménko.':'φ = 0 je šum.',
+    ma:'MA(1): hodnota závisí jen na včerejší chybě, proto je v ACF výrazný jen první sloupec.',
+    rw:'Náhodná procházka (jako cena akcie): každá změna je náhodná, ale úroveň si „pamatuje“ vše. ACF klesá velmi pomalu a řada je nestacionární. Analyzují se proto spíš změny (diference).',
+    se:'Sezónní řada: ACF je kladná na lagu 12 (a 24…), záporná na lagu 6. Nastavte lag k = 12 nebo 6 a podívejte se na bodový graf.'};
+  $('say4').textContent=S[p];
+}
+['pr4','ph4','lag4'].forEach(k=>$(k).oninput=render4);$('pr4').onchange=render4;
+$('n4').onclick=()=>{S4.seed=Math.floor(Math.random()*1e9);render4()};
+
+/* =========================================================
+   TAB 5
+   ========================================================= */
+const S5={m:'ses'};
+const DS5={lvl:{unit:'žádostí',y:(()=>{const r=rng(41);return[...Array(80)].map((_,i)=>Math.round((i<45?50:66)+5*gauss(r)))})()},
+  trd:{unit:'tis. uživatelů',y:(()=>{const r=rng(77);return[...Array(80)].map((_,i)=>+(20+.6*i+2.2*gauss(r)).toFixed(1))})()}};
+function smooth(y,al,be,m){const n=y.length,f=Array(n).fill(null);let L=y[0],B=m==='holt'?(y[1]-y[0]):0;
+  for(let t=1;t<n;t++){f[t]=L+B;const Lp=L;L=al*y[t]+(1-al)*(L+B);if(m==='holt')B=be*(L-Lp)+(1-be)*B}
+  return{f,L,B}}
+const err=(y,f)=>{const e=[];for(let t=2;t<y.length;t++)if(f[t]!=null)e.push(y[t]-f[t]);return{mae:mean(e.map(Math.abs)),rmse:Math.sqrt(mean(e.map(v=>v*v)))}};
+function render5(){
+  const d=DS5[$('d5').value],y=d.y,n=y.length,al=+$('al5').value,be=+$('be5').value,m=S5.m;
+  $('al5v').textContent=fx(al,2);$('be5v').textContent=fx(be,2);$('be5L').hidden=m!=='holt';
+  const s=smooth(y,al,be,m),H=10,xs=[...Array(n+H)].map((_,i)=>i+1),fut=xs.map(t=>t<n?null:s.L+s.B*(t-n));
+  const[a,b]=pad(ext([...y,...fut.filter(v=>v!=null)]));
+  const f=frame({W:640,H:300,L:44,Tp:20,Rt:10,B:28,x0:1,x1:n+H,y0:a,y1:b,xl:'týden',title:d.unit});let g=f.g;
+  g+=R(f.X(n),20,f.X(n+H)-f.X(n),f.Y(a)-20,'var(--soft)');
+  g+=poly(f,xs.slice(0,n),y,'var(--muted)','stroke-width="1.5"');y.forEach((v,i)=>g+=`<circle cx="${f.X(i+1).toFixed(1)}" cy="${f.Y(v).toFixed(1)}" r="2" fill="var(--muted)"/>`);
+  g+=poly(f,xs.slice(0,n),s.f,'var(--you)','stroke-width="2.4"')+poly(f,xs,fut,'var(--ok)','stroke-width="2.4" stroke-dasharray="6 4"');
+  $('s5').innerHTML=g;
+  const K=15,w=[...Array(K)].map((_,j)=>al*(1-al)**j);
+  const fw=frame({W:640,H:150,L:44,Tp:22,Rt:10,B:24,x0:-.5,x1:K-.5,y0:0,y1:Math.max(.2,al)*1.1,xt:[...Array(K)].map((_,j)=>j),xf:v=>v===0?'yₜ':'yₜ₋'+v,title:'Váha jednotlivých minulých hodnot v předpovědi: α(1 − α)ʲ',yf:v=>fx(v,1)});let gw=fw.g;
+  const bw=fw.pw/K;w.forEach((v,j)=>gw+=R(fw.X(j)-bw*.32,fw.Y(v),bw*.64,fw.Y(0)-fw.Y(v),'var(--you)')+(v>.015?T(fw.X(j),fw.Y(v)-3,fx(v,2),'ax','text-anchor="middle" font-size="9.5"'):''));
+  $('s5w').innerHTML=gw;
+  const E=err(y,s.f);
+  $('st5').innerHTML=`<span>MAE předpovědí o krok</span><span>${fx(E.mae,2)}</span><span>RMSE předpovědí o krok</span><span>${fx(E.rmse,2)}</span><span>váha posledních 5 hodnot</span><span>${pc(1-(1-al)**5,0)}</span><span>předpověď na příští týden</span><span>${fx(s.L+s.B,1)}</span>`+(m==='holt'?`<span>odhad trendu za týden</span><span>${fx(s.B,2)}</span>`:'');
+  let say=al<.15?'Malé α: křivka je hladká, ale po změně úrovně dlouho zaostává.':al>.7?'Velké α: předpověď skoro kopíruje poslední hodnotu a přenáší i náhodné výkyvy.':'Střední α: kompromis mezi vyhlazením šumu a rychlostí reakce.';
+  if(m==='ses'&&$('d5').value==='trd')say+=' U rostoucí řady jednoduché vyrovnávání systematicky zaostává a předpověď do budoucna je vodorovná. Zkuste Holtův model.';
+  $('say5').textContent=say;
+}
+$('m5').onclick=e=>{const b=e.target.closest('button');if(!b)return;S5.m=b.dataset.m;[...$('m5').children].forEach(x=>x.setAttribute('aria-pressed',x===b));render5()};
+['al5','be5'].forEach(k=>$(k).oninput=render5);$('d5').onchange=render5;
+$('best5').onclick=()=>{const y=DS5[$('d5').value].y,be=+$('be5').value;let best=[1e9,.3];for(let a=.02;a<=1.0001;a+=.02){const e=err(y,smooth(y,a,be,S5.m).f).rmse;if(e<best[0])best=[e,a]}$('al5').value=best[1].toFixed(2);render5()};
+
+/* =========================================================
+   EXERCISES
+   ========================================================= */
+function buildEx(){
+  const y=HDP.map(r=>r[1]),D=dyn(y),days=[31,28,31,30,31,30,31,31,30,31,30,31],feb=KNOF[1]*(365/12)/28;
+  const Ds=decomp(DS3.shop.gen(rng(11)),60,'lin','mul'),dec=Ds.I[11],nov=Ds.I[10];
+  const pm=mean(NEZ),ch=chrono(NEZ,NEZD);
+  const ex=[
+   ['Okamžiková, nebo intervalová?','tab. 2',`Rozhodněte u každé řady: (a) tržby knoflíkárny za měsíc, (b) HDP za rok, (c) počet nezaměstnaných k poslednímu dni měsíce, (d) zůstatek na účtu k 31. 12. Které z nich má smysl sčítat?`,
+    `Intervalové jsou (a) a (b), měří tok za období a dají se sčítat (roční tržby = součet měsíčních). Okamžikové jsou (c) a (d), jde o stav v jednom okamžiku. Sečíst zůstatky za 12 měsíců nedává smysl.`],
+   ['Očištění února','tab. 2',`Únorové tržby knoflíkárny jsou 1 920 Kč. Spočítejte očištěnou hodnotu. O kolik se zmenšil rozdíl oproti lednu?`,
+    `1920·(365/12)/28 = ${th(feb)}. Rozdíl leden − únor se zmenšil z ${th(KNOF[0]-KNOF[1])} na ${th(KNOF[0]*(365/12)/31-feb)}. Zbytek rozdílu už není dán délkou měsíce.`],
+   ['Průměrné tempo růstu HDP','tab. 2',`Spočítejte průměrný koeficient růstu HDP 2012–2019. Proč nestačí zprůměrovat roční koeficienty aritmeticky?`,
+    `k̄ = (5647/4042)^(1/7) = ${fx(D.kbar,4)}, tedy HDP rostlo průměrně o ${pc(D.kbar-1,2)} ročně. Aritmetický průměr koeficientů (${fx(D.karith,4)}) vychází o trochu výš a nevede zpět na hodnotu roku 2019, protože růst se v čase násobí.`],
+   ['Dvě předpovědi','tab. 2',`Odhadněte HDP 2020 pomocí průměrného absolutního přírůstku a pomocí průměrného koeficientu růstu. Kterou metodu byste zvolili a proč? Proč by obě v roce 2020 selhaly?`,
+    `S Δ̄: ${th(y.at(-1)+D.dbar)}. S k̄: ${th(y.at(-1)*D.kbar)}. Pro ekonomické veličiny, které rostou procentně, je přirozenější k̄. V roce 2020 přišla pandemie, což je šok mimo strukturu řady. Extrapolace předpokládá, že vývoj pokračuje stejně.`],
+   ['Chronologický průměr','tab. 2',`Proč je chronologický průměr nezaměstnanosti v roce 2019 nižší než prostý průměr?`,
+    `Prostý průměr je ${th(pm)}, chronologický ${th(ch)}. Krajní hodnoty (31. 1. a 31. 12.) mají v chronologickém průměru poloviční váhu. Lednová hodnota je nejvyšší z celého roku, takže když se počítá jen napůl, průměr klesne.`],
+   ['Aditivní, nebo multiplikativní?','tab. 1, tab. 3',`V záložce 1 nastavte trend 3 a přepínejte mezi aditivním a multiplikativním modelem. Kdy použijeme který? Který se hodí na tržby e-shopu a který na teplotu?`,
+    `U multiplikativního roste sezónní rozkmit s úrovní řady, u aditivního zůstává stejný. Tržby e-shopu: multiplikativní (vánoční špička je tím větší, čím víc firma prodává). Teplota: aditivní (léto je o zhruba stejný počet stupňů teplejší bez ohledu na trend). Exponenciální trend u teploty ani nejde spočítat, protože jsou v datech záporné hodnoty.`],
+   ['Sezónní index prosince','tab. 3',`U tržeb e-shopu (lineární trend, multiplikativní model) najděte sezónní index prosince a listopadu. Jak ho interpretujete?`,
+    `I(prosinec) = ${fx(dec,2)}, I(listopad) = ${fx(nov,2)}. V prosinci jsou tržby o ${pc(dec-1,0)} nad trendem, v listopadu o ${pc(nov-1,0)}. Sezónně očištěná prosincová tržba = skutečná tržba / ${fx(dec,2)}.`],
+   ['Klouzavý průměr','tab. 3',`Zapněte klouzavý průměr ze 3 bodů a pak z 12 měsíců. Proč 3bodový průměr sezónnost nevyhladí a 12měsíční ano? O kolik hodnot se řada zkrátí?`,
+    `Tři měsíce pokryjí jen kus sezónního cyklu, takže vlnky zůstanou. Dvanáct měsíců pokryje celý rok a sezónní výkyvy se v průměru vyruší, zbude trend. 3bodový průměr zkrátí řadu o 1 hodnotu na každém konci, 12měsíční o 6 na každém konci.`],
+   ['Pseudopředpověď','tab. 3',`Zapněte pseudopředpověď a porovnejte MAE na skrytých 12 měsících pro lineární a parabolický trend. Který je lepší na datech pro odhad a který na skrytých datech?`,
+    `Parabola mívá na datech pro odhad stejné nebo lepší R² (má o parametr víc), ale na skrytých datech se může stočit a mýlit víc. Lepší shoda s minulostí neznamená lepší předpověď. K tomu slouží pseudopředpověď (slide 56).`],
+   ['Pozná se AR(1)?','tab. 4',`Nastavte AR(1) s φ = 0,8. Jak vypadá ACF a PACF? Co se změní při φ = −0,6?`,
+    `Při φ = 0,8 ACF pomalu klesá (zhruba 0,8; 0,64; 0,51…) a PACF má výrazný jen první sloupec. Řada má „paměť“ a dlouho drží úroveň. Při φ = −0,6 se hodnoty střídají nahoru a dolů a ACF střídá znaménko.`],
+   ['Cena akcie','tab. 4',`Vyberte náhodnou procházku. Proč ACF klesá tak pomalu? Co by se stalo, kdybychom místo cen analyzovali denní změny ceny?`,
+    `Cena je součet všech minulých náhodných změn, takže dnešní cena je skoro stejná jako včerejší (r₁ ≈ 1) a řada je nestacionární. Denní změny jsou čistý šum bez autokorelace. Diference odstraní trend, to je „I“ v ARIMA.`],
+   ['Volba α','tab. 5',`U žádostí o úvěr porovnejte α = 0,1 a α = 0,8. Které rychleji zareaguje na skok po kampani? Klikněte na „Najít α s nejmenší RMSE“. Jaká je váha posledních 5 týdnů při α = 0,3?`,
+    `α = 0,8 zareaguje na skok během 1–2 týdnů, ale kopíruje i šum. α = 0,1 je hladké a ke skoku se dostane až po mnoha týdnech. Při α = 0,3 mají posledních 5 týdnů váhu 1 − 0,7⁵ = ${pc(1-.7**5,0)}.`]
+  ];
+  $('ex').innerHTML=ex.map(([h,tag,q,a])=>`<li><h3>${h}<span class="tag">${tag}</span></h3><p>${q}</p><details><summary>Řešení</summary><div>${a}</div></details></li>`).join('');
+}
+
+/* ---------- tabs ---------- */
+document.querySelector('nav').onclick=e=>{const b=e.target.closest('button');if(!b)return;
+  document.querySelectorAll('nav button').forEach(x=>{x.setAttribute('aria-selected',x===b);$(x.dataset.tab).hidden=x!==b});
+  try{localStorage.setItem('ts_tab',b.dataset.tab)}catch(_){}};
+try{const t=localStorage.getItem('ts_tab');if(t){const b=document.querySelector(`nav button[data-tab="${t}"]`);if(b)b.click()}}catch(_){}
+
+render1();render2a();render2b();render2c();loadD3();render4();render5();buildEx();
+</script>
+
+</body></html>

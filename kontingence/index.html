@@ -1,0 +1,510 @@
+<!doctype html><html lang="cs"><head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Kontingenční tabulky</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: same system as "Regrese na bytech" — one column, tabbed labs, plot left + controls right, stacks on phones */
+:root{
+  --bg:#f6f7f9; --panel:#ffffff; --ink:#18212b; --muted:#5b6773; --line:#d9dee4;
+  --fit:#1f5fa8; --you:#d0661c; --warn:#c2410c; --soft:#eaf0f7; --sel:#fff3d6;
+  --k1:#1f5fa8; --k2:#2a8f6a; --k3:#c27a12; --k4:#9b1d63; --k5:#6b5bb5; --k6:#5b6773;
+  --onk:#ffffff;
+  --display:"Bricolage Grotesque",ui-sans-serif,system-ui,sans-serif;
+  --body:"Instrument Sans",ui-sans-serif,system-ui,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#12171d; --panel:#1a2129; --ink:#e6ebf0; --muted:#9aa6b2; --line:#2e3843;
+  --fit:#6aa7ec; --you:#f0954f; --warn:#f08a52; --soft:#1f2a36; --sel:#3a3220;
+  --k1:#5b9be0; --k2:#4fb88f; --k3:#d99a3c; --k4:#d0609c; --k5:#9a8be0; --k6:#8593a1;
+  --onk:#0f141a; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#12171d; --panel:#1a2129; --ink:#e6ebf0; --muted:#9aa6b2; --line:#2e3843;
+  --fit:#6aa7ec; --you:#f0954f; --warn:#f08a52; --soft:#1f2a36; --sel:#3a3220;
+  --k1:#5b9be0; --k2:#4fb88f; --k3:#d99a3c; --k4:#d0609c; --k5:#9a8be0; --k6:#8593a1;
+  --onk:#0f141a; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.55;padding-inline:16px;padding-block:24px 48px}
+.wrap{max-width:1080px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
+header h1{font-family:var(--display);font-size:clamp(26px,4vw,38px);line-height:1.1;margin:0;text-wrap:balance}
+header p{margin:6px 0 0;color:var(--muted);max-width:70ch}
+.eq{font-family:var(--mono);font-size:13.5px}
+nav{display:flex;flex-wrap:wrap;gap:6px;border-bottom:1px solid var(--line)}
+nav button{font:500 14px var(--body);color:var(--muted);background:none;border:none;border-bottom:2px solid transparent;padding:8px 12px;cursor:pointer;margin-bottom:-1px}
+nav button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--fit)}
+button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible,td:focus-visible{outline:2px solid var(--fit);outline-offset:2px}
+section{display:flex;flex-direction:column;gap:16px}
+h2{font-family:var(--display);font-size:22px;margin:0;text-wrap:balance}
+h3{font-size:15px;margin:0;font-weight:600}
+.lead{margin:0;color:var(--muted);max-width:72ch}
+.lab{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:820px){.lab{grid-template-columns:1fr}}
+.col{display:flex;flex-direction:column;gap:14px;min-width:0}
+.plot{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:8px;min-width:0}
+.plot svg{width:100%;height:auto;display:block}
+.box{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:12px 14px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.chk{display:flex;gap:8px;align-items:center;font-size:14px;cursor:pointer}
+.seg{display:flex;flex-wrap:wrap;gap:0;border:1px solid var(--line);border-radius:5px;overflow:hidden;width:fit-content;max-width:100%}
+.seg button{font:500 13.5px var(--body);background:var(--panel);color:var(--muted);border:none;border-right:1px solid var(--line);padding:6px 11px;cursor:pointer}
+.seg button:last-child{border-right:none}
+.seg button[aria-pressed="true"]{background:var(--fit);color:var(--onk)}
+.stats{display:grid;grid-template-columns:1fr auto;gap:4px 12px;font-size:14px}
+.stats span:nth-child(even){font-family:var(--mono);font-variant-numeric:tabular-nums;text-align:right}
+.big{font-family:var(--mono);font-size:22px;font-variant-numeric:tabular-nums}
+.btns{display:flex;flex-wrap:wrap;gap:8px}
+button.b{font:500 13px var(--body);background:var(--soft);color:var(--ink);border:1px solid var(--line);border-radius:4px;padding:6px 10px;cursor:pointer}
+button.b:hover{border-color:var(--fit)}
+button.b:disabled{opacity:.45;cursor:default}
+.legend{display:flex;flex-wrap:wrap;gap:12px;font-size:13px;color:var(--muted);padding:4px 6px 0}
+.legend i{display:inline-block;width:11px;height:11px;vertical-align:-1px;margin-right:5px;border-radius:2px}
+.tip{font-size:13.5px;color:var(--muted);border-left:2px solid var(--line);padding-left:10px;margin:0}
+.say{font-size:15px;margin:0;border-left:3px solid var(--you);padding:2px 0 2px 10px}
+.say b{font-weight:600}
+.tablewrap{overflow-x:auto}
+table{border-collapse:collapse;font-size:13.5px;width:100%}
+th,td{padding:6px 9px;border-bottom:1px solid var(--line);text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+th{font-weight:600;color:var(--muted);font-size:12.5px;letter-spacing:.02em}
+thead th{border-bottom:1px solid var(--muted)}
+th.rl{text-align:left;color:var(--ink);font-size:13.5px}
+td{font-family:var(--mono);font-size:13px}
+td.c{cursor:pointer}
+td.c:hover{background:var(--soft)}
+tr.tot td,tr.tot th,td.tot{font-weight:600}
+tr.tot td,tr.tot th{border-top:1px solid var(--muted)}
+td.tot{border-left:1px solid var(--muted)}
+.band{background:var(--soft)}
+td.sel{background:var(--sel);outline:2px solid var(--you);outline-offset:-2px}
+td.den{outline:2px dashed var(--fit);outline-offset:-3px}
+.corner{text-align:left;font-weight:500;font-size:12px;color:var(--muted)}
+.corner b{color:var(--ink)}
+table input{font:13px var(--mono);width:5.5em;text-align:right;padding:3px 5px;border:1px solid var(--line);border-radius:3px;background:var(--panel);color:var(--ink)}
+table input.lb{font-family:var(--body);text-align:left;width:8em}
+select{font:14px var(--body);padding:4px 6px;border:1px solid var(--line);border-radius:4px;background:var(--panel);color:var(--ink);max-width:100%}
+.row2{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center}
+.g22{display:grid;grid-template-columns:auto 1fr 1fr auto;gap:6px 8px;align-items:center;font-size:14px}
+.g22 input[type=number]{font:15px var(--mono);width:100%;min-width:0;padding:6px 7px;border:1px solid var(--line);border-radius:4px;background:var(--panel);color:var(--ink);text-align:right}
+.g22 input[type=text]{font:13.5px var(--body);width:100%;min-width:0;padding:4px 6px;border:1px solid var(--line);border-radius:4px;background:var(--panel);color:var(--ink)}
+.g22 .m{font-family:var(--mono);font-size:13px;color:var(--muted);text-align:right}
+.g22 .h{font-size:12px;color:var(--muted)}
+label.rng{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;font-size:14px}
+label.rng input{width:100%;accent-color:var(--you)}
+.val{font-family:var(--mono);font-size:13px;font-variant-numeric:tabular-nums;min-width:4ch;text-align:right}
+.pill{display:inline-block;font:600 12px var(--body);letter-spacing:.04em;text-transform:uppercase;padding:2px 8px;border-radius:99px;background:var(--soft);color:var(--ink);border:1px solid var(--line)}
+ol.ex{margin:0;padding-left:0;list-style:none;counter-reset:ex;display:flex;flex-direction:column;gap:12px;max-width:80ch}
+ol.ex>li{counter-increment:ex;background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:12px 14px 12px 48px;position:relative}
+ol.ex>li::before{content:counter(ex);position:absolute;left:14px;top:11px;font-family:var(--display);font-weight:700;font-size:18px;color:var(--fit)}
+ol.ex .tag{font-size:11.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-left:6px;font-weight:500}
+ol.ex p{margin:4px 0}
+details{margin-top:6px}
+summary{cursor:pointer;color:var(--fit);font-size:14px;font-weight:500}
+details>div{margin-top:6px;font-size:14px;border-left:2px solid var(--fit);padding-left:10px}
+svg text{font-family:var(--body)}
+.ax{font:11px var(--mono);fill:var(--muted)}
+.al{font-size:12px;fill:var(--muted)}
+.lb{font-size:12.5px;fill:var(--ink)}
+.in{font:500 11.5px var(--mono);fill:var(--onk);pointer-events:none}
+.gl{stroke:var(--line);stroke-width:1}
+.seg-r{cursor:pointer}
+.hi{stroke:var(--ink);stroke-width:2.5}
+.score{display:flex;gap:18px;flex-wrap:wrap;font-size:14px;color:var(--muted)}
+.score b{font-family:var(--mono);color:var(--ink);font-weight:500}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="wrap">
+<header>
+  <h1>Kontingenční tabulky</h1>
+  <p>Vztah dvou kategorických proměnných: absolutní a relativní četnosti, které procento odpovídá na kterou otázku, a síla asociace ve čtyřpolní tabulce (koeficient φ). Smyšlená data z e-shopu (zařízení × způsob platby, N = 200) a z banky.</p>
+</header>
+
+<nav role="tablist">
+  <button role="tab" aria-selected="true" data-tab="p1">1 · Četnosti a procenta</button>
+  <button role="tab" aria-selected="false" data-tab="p2">2 · Čtyřpolní tabulka a φ</button>
+  <button role="tab" aria-selected="false" data-tab="p3">3 · Odhadni φ</button>
+  <button role="tab" aria-selected="false" data-tab="p4">Cvičení</button>
+</nav>
+
+<!-- TAB 1 -->
+<section id="p1">
+  <div><h2>Které procento odpovídá na kterou otázku</h2>
+  <p class="lead">Klikněte na buňku tabulky nebo na dílek grafu. Podle zvoleného typu četností se zvýrazní, z čeho se procento počítá (jmenovatel je čárkovaně), a pod tabulkou se objeví věta, kterou procento vyjadřuje.</p></div>
+  <div class="box">
+    <div class="row2">
+      <label for="ds" class="chk" style="cursor:default">Data <select id="ds">
+        <option value="shop">E-shop (smyšlené): zařízení × platba (N = 200)</option>
+        <option value="banka">Banka (smyšlené): věk × kanál (N = 400)</option>
+        <option value="vlastni">Vlastní tabulka</option>
+      </select></label>
+      <div class="seg" id="mode" role="group" aria-label="Typ četností">
+        <button data-m="abs" aria-pressed="true">Absolutní</button>
+        <button data-m="row" aria-pressed="false">Řádková %</button>
+        <button data-m="col" aria-pressed="false">Sloupcová %</button>
+        <button data-m="tot" aria-pressed="false">Celková %</button>
+      </div>
+      <button class="b" id="edit">Upravit čísla</button>
+    </div>
+    <div class="tablewrap"><table id="t1"></table></div>
+    <div class="btns" id="editBtns" hidden>
+      <button class="b" id="addR">+ řádek</button><button class="b" id="delR">− řádek</button>
+      <button class="b" id="addC">+ sloupec</button><button class="b" id="delC">− sloupec</button>
+      <button class="b" id="done">Hotovo</button>
+    </div>
+    <p class="say" id="say1"></p>
+  </div>
+  <div class="lab">
+    <div class="plot"><svg id="s1" viewBox="0 0 640 340" role="img" aria-label="Graf kontingenční tabulky"></svg>
+      <div class="legend" id="leg1"></div>
+    </div>
+    <div class="col">
+      <div class="box">
+        <h3 id="gt1"></h3>
+        <p class="tip" id="gd1" style="border:none;padding:0"></p>
+      </div>
+      <div class="box">
+        <h3>Kontrola součtů</h3>
+        <div class="stats" id="chk1"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TAB 2 -->
+<section id="p2" hidden>
+  <div><h2>Asociace ve čtyřpolní tabulce</h2>
+  <p class="lead">Měňte čísla v tabulce 2 × 2 nebo posuvníkem přesouvejte pozorování mezi diagonálami při stejných součtech. Graf ukazuje řádková procenta, šířka sloupce odpovídá velikosti skupiny. Čárkovaná čára je podíl v celém vzorku: kdyby obě skupiny ležely na ní, je φ = 0.</p></div>
+  <div class="lab">
+    <div class="col">
+      <div class="plot"><svg id="s2" viewBox="0 0 640 360" role="img" aria-label="Mozaikový graf tabulky 2 × 2"></svg>
+        <div class="legend" id="leg2"></div>
+      </div>
+      <div class="plot"><svg id="meter" viewBox="0 0 640 92" role="img" aria-label="Hodnota φ na škále od −1 do 1"></svg></div>
+    </div>
+    <div class="col">
+      <div class="box">
+        <label for="pre" class="chk" style="cursor:default">Příklad <select id="pre">
+          <option value="shop">E-shop: zařízení × digitální platba</option>
+          <option value="vik">E-shop: víkend × vrácení zboží</option>
+          <option value="k1">Křeček, φ = 1</option>
+          <option value="km1">Křeček, φ = −1</option>
+          <option value="k0">Křeček, φ = 0</option>
+          <option value="rez">Kurz fin. gramotnosti × finanční rezerva (smyšlené)</option>
+        </select></label>
+        <div class="g22" id="g22">
+          <span></span><input type="text" id="c1" aria-label="Název 1. sloupce"><input type="text" id="c2" aria-label="Název 2. sloupce"><span class="h">součet</span>
+          <input type="text" id="r1" aria-label="Název 1. řádku"><input type="number" id="n11" min="0" aria-label="n11"><input type="number" id="n12" min="0" aria-label="n12"><span class="m" id="m1"></span>
+          <input type="text" id="r2" aria-label="Název 2. řádku"><input type="number" id="n21" min="0" aria-label="n21"><input type="number" id="n22" min="0" aria-label="n22"><span class="m" id="m2"></span>
+          <span class="h">součet</span><span class="m" id="mc1"></span><span class="m" id="mc2"></span><span class="m" id="mN"></span>
+        </div>
+        <label class="rng" for="slide">n<sub>11</sub><input type="range" id="slide" min="0" max="10" step="1"><span class="val" id="slidev"></span></label>
+        <p class="tip" id="slideTip"></p>
+        <div class="btns"><button class="b" id="swC">Prohodit sloupce</button><button class="b" id="swR">Prohodit řádky</button><button class="b" id="x10">Všechno × 10</button></div>
+      </div>
+      <div class="box">
+        <div><span class="big" id="phiBig"></span> <span class="pill" id="phiLab"></span></div>
+        <div class="stats" id="st2"></div>
+        <p class="say" id="say2"></p>
+        <label class="chk"><input type="checkbox" id="showOR"> Ukázat i poměr šancí (OR)</label>
+        <div id="orBox" class="col" hidden style="gap:8px">
+          <div class="stats" id="orSt"></div>
+          <p class="tip" id="orSay"></p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <p class="tip">φ = (n<sub>11</sub>·n<sub>22</sub> − n<sub>12</sub>·n<sub>21</sub>) / √(n<sub>1*</sub>·n<sub>2*</sub>·n<sub>*1</sub>·n<sub>*2</sub>). Čitatel je rozdíl součinů na diagonálách, jmenovatel výsledek normuje do rozmezí −1 až 1.</p>
+</section>
+
+<!-- TAB 3 -->
+<section id="p3" hidden>
+  <div><h2>Odhadněte φ z grafu</h2>
+  <p class="lead">Obdoba hry „Guess the Correlation“. Odhadněte z mozaikového grafu hodnotu φ včetně znaménka a pak ji odkryjte. Pro třídu: nechte hlasovat, než kliknete.</p></div>
+  <div class="lab">
+    <div class="plot"><svg id="s3" viewBox="0 0 640 360" role="img" aria-label="Mozaikový graf náhodné tabulky"></svg>
+      <div class="legend" id="leg3"></div>
+    </div>
+    <div class="col">
+      <div class="box">
+        <label class="rng" for="guess">odhad<input type="range" id="guess" min="-1" max="1" step="0.05" value="0"><span class="val" id="guessv"></span></label>
+        <div class="btns"><button class="b" id="reveal">Odkrýt</button><button class="b" id="next">Další tabulka</button></div>
+        <label class="chk"><input type="checkbox" id="nums3"> Ukázat čísla v grafu</label>
+        <div id="res3" class="stats" hidden></div>
+        <div class="tablewrap" id="tab3" hidden></div>
+      </div>
+      <div class="box">
+        <h3>Skóre</h3>
+        <div class="score"><span>kol <b id="sc_n">0</b></span><span>průměrná chyba <b id="sc_e">–</b></span><span>špatné znaménko <b id="sc_s">0</b></span></div>
+        <button class="b" id="reset3" style="width:fit-content">Vynulovat</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- EXERCISES -->
+<section id="p4" hidden>
+  <div><h2>Cvičení do přednášky</h2>
+  <p class="lead">Všechno se dá vyřešit na této stránce. Úlohy 1–4 patří k záložce 1, úlohy 5–10 k záložce 2.</p></div>
+  <ol class="ex" id="ex"></ol>
+</section>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+const K=['var(--k1)','var(--k2)','var(--k3)','var(--k4)','var(--k5)','var(--k6)'];
+const fx=(x,d=1)=>(x<0?'−':'')+Math.abs(x).toFixed(d).replace('.',',');
+const pc=(x,d=1)=>fx(100*x,d)+' %';
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const sum=a=>a.reduce((s,v)=>s+v,0);
+
+/* ---------- datasets ---------- */
+const DS={
+  shop:{rv:'Zařízení',cv:'Způsob platby',rows:['mobil','počítač'],cols:['karta','Apple/Google Pay','převod','dobírka','odložená platba'],n:[[42,58,8,18,14],[26,6,12,10,6]]},
+  banka:{rv:'Věk',cv:'Hlavní kanál',rows:['18–29','30–49','50+'],cols:['aplikace','internet. bankovnictví','pobočka'],n:[[96,18,6],[110,52,18],[34,38,28]]},
+  vlastni:{rv:'Proměnná A',cv:'Proměnná B',rows:['a1','a2'],cols:['b1','b2','b3'],n:[[20,10,5],[8,12,15]]}
+};
+const S1={ds:'shop',mode:'abs',sel:[0,0],edit:false};
+const marg=d=>{const R=d.n.map(sum),C=d.cols.map((_,j)=>sum(d.n.map(r=>r[j])));return{R,C,N:sum(R)}};
+const val=(d,m,i,j)=>{const{R,C,N}=marg(d);const n=(i<0&&j<0)?N:i<0?C[j]:j<0?R[i]:d.n[i][j];
+  if(m==='abs')return n;const den=m==='row'?(i<0?N:R[i]):m==='col'?(j<0?N:C[j]):N;return den?n/den:NaN};
+const show=(d,m,i,j)=>{const v=val(d,m,i,j);return m==='abs'?String(v):isNaN(v)?'–':pc(v,1)};
+
+function renderTable1(){
+  const d=DS[S1.ds],m=S1.mode,[si,sj]=S1.sel,{R,C,N}=marg(d),t=$('t1');
+  let h='<thead><tr><th class="corner">'+(S1.edit?`<input class="lb" data-lab="rv" value="${esc(d.rv)}"> \\ <input class="lb" data-lab="cv" value="${esc(d.cv)}">`:`<b>${esc(d.rv)}</b> \\ ${esc(d.cv)}`)+'</th>';
+  d.cols.forEach((c,j)=>h+=`<th>${S1.edit?`<input class="lb" data-lab="c${j}" value="${esc(c)}">`:esc(c)}</th>`);
+  h+='<th>Celkem</th></tr></thead><tbody>';
+  const band=(i,j)=>(m==='row'&&i===si)||(m==='col'&&j===sj)||(m==='tot');
+  d.rows.forEach((r,i)=>{
+    h+=`<tr><th class="rl">${S1.edit?`<input class="lb" data-lab="r${i}" value="${esc(r)}">`:esc(r)}</th>`;
+    d.cols.forEach((_,j)=>{
+      if(S1.edit){h+=`<td><input type="number" min="0" data-i="${i}" data-j="${j}" value="${d.n[i][j]}" aria-label="${esc(r)}, ${esc(d.cols[j])}"></td>`;return}
+      const cl=['c'];if(band(i,j))cl.push('band');if(i===si&&j===sj)cl.push('sel');
+      h+=`<td class="${cl.join(' ')}" data-i="${i}" data-j="${j}" tabindex="0">${show(d,m,i,j)}</td>`});
+    const den=(m==='row'&&i===si);
+    h+=`<td class="tot${band(i,-1)&&m!=='col'?' band':''}${den?' den':''}" id="R${i}">${S1.edit?R[i]:show(d,m,i,-1)}</td></tr>`});
+  h+='</tbody><tfoot><tr class="tot"><th class="rl">Celkem</th>';
+  d.cols.forEach((_,j)=>{const den=(m==='col'&&j===sj);h+=`<td class="${band(-1,j)&&m!=='row'?'band':''}${den?' den':''}" id="C${j}">${S1.edit?C[j]:show(d,m,-1,j)}</td>`});
+  h+=`<td class="tot${m==='tot'?' den band':''}" id="NN">${S1.edit?N:show(d,m,-1,-1)}</td></tr></tfoot>`;
+  t.innerHTML=h;
+}
+function updTotals(){const d=DS[S1.ds],{R,C,N}=marg(d);R.forEach((v,i)=>$('R'+i).textContent=v);C.forEach((v,j)=>$('C'+j).textContent=v);$('NN').textContent=N}
+
+function sentence1(){
+  const d=DS[S1.ds],m=S1.mode,[i,j]=S1.sel,{R,C,N}=marg(d),n=d.n[i][j],r=esc(d.rows[i]),c=esc(d.cols[j]);
+  let s;
+  if(m==='abs')s=`<b>${n}</b> z ${N} pozorování má zároveň ${esc(d.rv).toLowerCase()} = <b>${r}</b> a ${esc(d.cv).toLowerCase()} = <b>${c}</b>. Absolutní čísla se mezi skupinami různé velikosti špatně srovnávají.`;
+  if(m==='row')s=`Ze skupiny <b>${r}</b> (${R[i]}) má hodnotu <b>${c}</b> ${n}, tj. <b>${pc(n/R[i])}</b>. Odpovídá na otázku: „Jaká část skupiny ${r} volí ${c}?“ Pro srovnání: v celém vzorku je to ${pc(C[j]/N)}.`;
+  if(m==='col')s=`Z těch, kdo mají <b>${c}</b> (${C[j]}), patří do skupiny <b>${r}</b> ${n}, tj. <b>${pc(n/C[j])}</b>. Odpovídá na otázku: „Kdo tvoří skupinu ${c}?“ Pro srovnání: ${r} tvoří ${pc(R[i]/N)} celého vzorku.`;
+  if(m==='tot')s=`Kombinace <b>${r}</b> a <b>${c}</b> tvoří <b>${pc(n/N)}</b> celého vzorku (${n} z ${N}). Odpovídá na otázku: „Jak častá je tato kombinace mezi všemi?“`;
+  $('say1').innerHTML=s;
+  const G={abs:['Seskupené sloupce','Výšky jsou počty. Větší skupina má vyšší sloupce, i když se chová stejně.'],
+    row:['100% skládané pruhy po řádcích','Každý řádek tabulky je jeden pruh, který dává 100 %. Pokud jsou všechny pruhy stejně rozdělené jako „Celkem“, proměnné spolu nesouvisejí.'],
+    col:['100% skládané sloupce po sloupcích','Každý sloupec tabulky je jeden sloupec grafu. Ukazuje složení skupin podle druhé proměnné.'],
+    tot:['Mozaikový graf','Šířka je velikost skupiny v řádku, výška řádkové procento. Plocha dílku odpovídá celkovému procentu.']};
+  $('gt1').textContent=G[m][0];$('gd1').textContent=G[m][1];
+  const sR=sum(R),sC=sum(C);
+  $('chk1').innerHTML=`<span>součet řádkových součtů</span><span>${sR}</span><span>součet sloupcových součtů</span><span>${sC}</span><span>N</span><span>${N}</span>`+
+   (m!=='abs'?`<span>${m==='row'?'každý řádek':m==='col'?'každý sloupec':'všechny buňky'}</span><span>100 %</span>`:'');
+}
+
+/* ---------- SVG helpers ---------- */
+const rect=(x,y,w,h,f,ex='')=>`<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${Math.max(0,w).toFixed(1)}" height="${Math.max(0,h).toFixed(1)}" fill="${f}" ${ex}/>`;
+const txt=(x,y,s,cl,ex='')=>`<text x="${x.toFixed(1)}" y="${y.toFixed(1)}" class="${cl}" ${ex}>${s}</text>`;
+const legend=(el,labs)=>{el.innerHTML=labs.map((l,k)=>`<span><i style="background:${K[k%6]}"></i>${esc(l)}</span>`).join('')};
+
+function chart1(){
+  const d=DS[S1.ds],m=S1.mode,[si,sj]=S1.sel,{R,C,N}=marg(d),W=640,H=340;let g='';
+  const segAttr=(i,j)=>`class="seg-r${i===si&&j===sj?' hi':''}" data-i="${i}" data-j="${j}"`;
+  if(m==='abs'){
+    const L=44,T=14,B=46,Rr=10,pw=W-L-Rr,ph=H-T-B,mx=Math.max(1,...d.n.flat());
+    const step=Math.pow(10,Math.floor(Math.log10(mx)));const tk=[1,2,5,10].map(v=>v*step).find(s=>mx/s<=6)||step;const top=Math.ceil(mx/tk)*tk;
+    for(let v=0;v<=top+1e-9;v+=tk){const y=T+ph-ph*v/top;g+=`<line class="gl" x1="${L}" x2="${W-Rr}" y1="${y}" y2="${y}"/>`+txt(L-6,y+4,v,'ax','text-anchor="end"')}
+    const gw=pw/d.cols.length,bw=Math.min(40,(gw-14)/d.rows.length);
+    d.cols.forEach((c,j)=>{const x0=L+j*gw+(gw-bw*d.rows.length)/2;
+      d.rows.forEach((_,i)=>{const h=ph*d.n[i][j]/top;g+=rect(x0+i*bw,T+ph-h,bw-2,h,K[i%6],segAttr(i,j));
+        g+=txt(x0+i*bw+bw/2-1,T+ph-h-4,d.n[i][j],'ax','text-anchor="middle"')});
+      g+=txt(L+j*gw+gw/2,H-B+18,esc(c),'lb','text-anchor="middle"')});
+    g+=txt(L,H-8,esc(d.cv)+' · barva sloupce = '+esc(d.rv).toLowerCase(),'al');
+    legend($('leg1'),d.rows);
+  } else if(m==='row'){
+    const L=150,T=12,Rr=12,rowsP=[...d.rows.map((r,i)=>({lab:r,i,tot:R[i],v:d.n[i]})),{lab:'Celkem',i:-1,tot:N,v:C}];
+    const bh=Math.min(46,(H-T-34)/(rowsP.length+.4)),pw=W-L-Rr;
+    rowsP.forEach((rw,k)=>{const y=T+k*(bh+8)+(rw.i<0?bh*.4:0);let x=L;
+      rw.v.forEach((n,j)=>{const w=rw.tot?pw*n/rw.tot:0;g+=rect(x,y,w-1,bh,K[j%6],rw.i>=0?segAttr(rw.i,j):'opacity="0.55"');
+        if(w>40)g+=txt(x+w/2,y+bh/2+4,fx(100*n/rw.tot,0)+' %','in','text-anchor="middle"');x+=w});
+      g+=txt(L-8,y+bh/2+4,esc(rw.lab)+` (${rw.tot})`,rw.i<0?'al':'lb','text-anchor="end"')});
+    [0,25,50,75,100].forEach(v=>g+=txt(L+pw*v/100,H-10,v+' %','ax','text-anchor="middle"'));
+    legend($('leg1'),d.cols);
+  } else if(m==='col'){
+    const L=44,T=12,B=46,Rr=10,pw=W-L-Rr,ph=H-T-B,colsP=[...d.cols.map((c,j)=>({lab:c,j,tot:C[j],v:d.n.map(r=>r[j])})),{lab:'Celkem',j:-1,tot:N,v:R}];
+    const gw=pw/(colsP.length+.3),bw=Math.min(70,gw-14);
+    [0,25,50,75,100].forEach(v=>{const y=T+ph-ph*v/100;g+=`<line class="gl" x1="${L}" x2="${W-Rr}" y1="${y}" y2="${y}"/>`+txt(L-6,y+4,v,'ax','text-anchor="end"')});
+    colsP.forEach((cl,k)=>{const x=L+k*gw+(cl.j<0?gw*.3:0)+(gw-bw)/2;let y=T+ph;
+      cl.v.forEach((n,i)=>{const h=cl.tot?ph*n/cl.tot:0;y-=h;g+=rect(x,y,bw,h-1,K[i%6],cl.j>=0?segAttr(i,cl.j):'opacity="0.55"');
+        if(h>16&&bw>34)g+=txt(x+bw/2,y+h/2+4,fx(100*n/cl.tot,0)+' %','in','text-anchor="middle"')});
+      g+=txt(x+bw/2,H-B+18,esc(cl.lab),cl.j<0?'al':'lb','text-anchor="middle"');g+=txt(x+bw/2,H-B+33,'('+cl.tot+')','ax','text-anchor="middle"')});
+    legend($('leg1'),d.rows);
+  } else {
+    const L=20,T=12,B=44,Rr=20,pw=W-L-Rr,ph=H-T-B,gap=4,aw=pw-gap*(d.rows.length-1);let x=L;
+    d.rows.forEach((r,i)=>{const w=N?aw*R[i]/N:0;let y=T;
+      d.cols.forEach((_,j)=>{const h=R[i]?ph*d.n[i][j]/R[i]:0;g+=rect(x,y,w,h-1,K[j%6],segAttr(i,j));
+        if(h>16&&w>44)g+=txt(x+w/2,y+h/2+4,fx(100*d.n[i][j]/N,1)+' %','in','text-anchor="middle"');y+=h});
+      g+=txt(x+w/2,H-B+18,esc(r),'lb','text-anchor="middle"');g+=txt(x+w/2,H-B+33,pc(R[i]/N,0)+' vzorku','ax','text-anchor="middle"');x+=w+gap});
+    legend($('leg1'),d.cols);
+  }
+  $('s1').innerHTML=g;
+}
+function render1(){if(!S1.edit)renderTable1();sentence1();chart1()}
+function clampSel(){const d=DS[S1.ds];S1.sel=[Math.min(S1.sel[0],d.rows.length-1),Math.min(S1.sel[1],d.cols.length-1)]}
+
+$('ds').onchange=e=>{S1.ds=e.target.value;S1.edit=false;$('editBtns').hidden=true;$('edit').hidden=false;clampSel();render1()};
+$('mode').onclick=e=>{const b=e.target.closest('button');if(!b)return;S1.mode=b.dataset.m;
+  [...$('mode').children].forEach(x=>x.setAttribute('aria-pressed',x===b));render1()};
+const pick=e=>{const c=e.target.closest('[data-i]');if(!c||S1.edit||c.tagName==='INPUT')return;S1.sel=[+c.dataset.i,+c.dataset.j];render1()};
+$('t1').addEventListener('click',pick);$('s1').addEventListener('click',pick);
+$('t1').addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();pick(e)}});
+$('edit').onclick=()=>{if(S1.ds!=='vlastni'){DS.vlastni=JSON.parse(JSON.stringify(DS[S1.ds]));S1.ds='vlastni';$('ds').value='vlastni'}
+  S1.edit=true;$('editBtns').hidden=false;$('edit').hidden=true;renderTable1();render1()};
+$('done').onclick=()=>{S1.edit=false;$('editBtns').hidden=true;$('edit').hidden=false;render1()};
+$('t1').addEventListener('input',e=>{const t=e.target,d=DS.vlastni;if(!S1.edit)return;
+  if(t.dataset.lab){const k=t.dataset.lab;if(k==='rv'||k==='cv')d[k]=t.value;else if(k[0]==='r')d.rows[+k.slice(1)]=t.value;else d.cols[+k.slice(1)]=t.value}
+  else{d.n[+t.dataset.i][+t.dataset.j]=Math.max(0,Math.round(+t.value||0))}
+  updTotals();sentence1();chart1()});
+const reshape=f=>{f(DS.vlastni);clampSel();renderTable1();render1();updBtns()};
+const updBtns=()=>{const d=DS.vlastni;$('delR').disabled=d.rows.length<=2;$('addR').disabled=d.rows.length>=6;$('delC').disabled=d.cols.length<=2;$('addC').disabled=d.cols.length>=6};
+$('addR').onclick=()=>reshape(d=>{d.rows.push('a'+(d.rows.length+1));d.n.push(d.cols.map(()=>5))});
+$('delR').onclick=()=>reshape(d=>{d.rows.pop();d.n.pop()});
+$('addC').onclick=()=>reshape(d=>{d.cols.push('b'+(d.cols.length+1));d.n.forEach(r=>r.push(5))});
+$('delC').onclick=()=>reshape(d=>{d.cols.pop();d.n.forEach(r=>r.pop())});
+
+/* ---------- 2x2 ---------- */
+const PRE={
+  shop:{rv:'Zařízení',cv:'Platba',r:['mobil','počítač'],c:['digitální','jiná'],n:[100,40,32,28]},
+  vik:{rv:'Den objednávky',cv:'Zboží vráceno',r:['víkend','pracovní den'],c:['ano','ne'],n:[12,108,25,255]},
+  k1:{rv:'Má křečka',cv:'Bydliště',r:['ano','ne'],c:['Praha','zbytek ČR'],n:[100,0,0,100]},
+  km1:{rv:'Má křečka',cv:'Bydliště',r:['ano','ne'],c:['Praha','zbytek ČR'],n:[0,100,100,0]},
+  k0:{rv:'Má křečka',cv:'Bydliště',r:['ano','ne'],c:['Praha','zbytek ČR'],n:[50,50,50,50]},
+  rez:{rv:'Kurz fin. gramotnosti',cv:'Rezerva na 3 měsíce',r:['absolvoval','neabsolvoval'],c:['má','nemá'],n:[64,36,41,59]}
+};
+let T2=JSON.parse(JSON.stringify(PRE.shop));
+function stats2(n){const[a,b,c,d]=n,r1=a+b,r2=c+d,c1=a+c,c2=b+d,N=r1+r2,den=Math.sqrt(r1*r2*c1*c2);
+  return{a,b,c,d,r1,r2,c1,c2,N,phi:den?(a*d-b*c)/den:NaN}}
+const strength=p=>{const q=Math.abs(p);return q<.1?'zanedbatelná':q<.3?'slabá':q<.5?'střední':'silná'};
+
+function mosaic2(svg,t,opt){
+  const s=stats2(t.n),W=640,H=360,L=60,T=18,B=52,Rr=16,pw=W-L-Rr,ph=H-T-B,gap=6,aw=pw-gap;
+  let g='';[0,25,50,75,100].forEach(v=>{const y=T+ph-ph*v/100;g+=txt(L-8,y+4,v+' %','ax','text-anchor="end"')});
+  let x=L;[[s.a,s.b,s.r1,t.r[0]],[s.c,s.d,s.r2,t.r[1]]].forEach(([u,v,tot,lab],i)=>{
+    const w=s.N?aw*tot/s.N:aw/2,h1=tot?ph*u/tot:0;
+    g+=rect(x,T,w,h1,K[0]);g+=rect(x,T+h1,w,ph-h1,K[1]);
+    if(opt.nums&&w>40){if(h1>18)g+=txt(x+w/2,T+h1/2+4,(opt.counts?u+' · ':'')+pc(tot?u/tot:0,0),'in','text-anchor="middle"');
+      if(ph-h1>18)g+=txt(x+w/2,T+h1+(ph-h1)/2+4,(opt.counts?v+' · ':'')+pc(tot?v/tot:0,0),'in','text-anchor="middle"')}
+    g+=txt(x+w/2,H-B+20,esc(lab),'lb','text-anchor="middle"');
+    if(opt.nums)g+=txt(x+w/2,H-B+36,'n = '+tot,'ax','text-anchor="middle"');x+=w+gap});
+  if(s.N){const y=T+ph*s.c1/s.N;g+=`<line x1="${L-4}" x2="${W-Rr+4}" y1="${y}" y2="${y}" stroke="var(--ink)" stroke-width="1.5" stroke-dasharray="6 4"/>`}
+  g+=txt(L,H-6,esc(t.rv)+' (šířka = velikost skupiny)','al');
+  svg.innerHTML=g;
+}
+function meter(p){const W=640,L=30,Rr=30,pw=W-L-Rr,X=v=>L+pw*(v+1)/2;let g='';
+  const z=[[-1,-.5,.30],[-.5,-.3,.20],[-.3,-.1,.11],[-.1,.1,.03],[.1,.3,.11],[.3,.5,.20],[.5,1,.30]];
+  z.forEach(([a,b,o])=>g+=rect(X(a),22,X(b)-X(a),18,'var(--fit)',`opacity="${o}"`));
+  [-1,-.5,-.3,-.1,0,.1,.3,.5,1].forEach(v=>g+=`<line x1="${X(v)}" x2="${X(v)}" y1="40" y2="46" stroke="var(--muted)"/>`+txt(X(v),60,fx(v,v%1?1:0),'ax','text-anchor="middle"'));
+  [['silná',-.75],['střední',-.4],['slabá',-.2],['zaned.',0],['slabá',.2],['střední',.4],['silná',.75]].forEach(([l,v])=>g+=txt(X(v),80,l,'al','text-anchor="middle" font-size="11"'));
+  if(!isNaN(p))g+=`<path d="M${X(p)} 20 l-7 -12 h14z" fill="var(--you)"/><line x1="${X(p)}" x2="${X(p)}" y1="20" y2="42" stroke="var(--you)" stroke-width="3"/>`;
+  $('meter').innerHTML=g}
+
+function fill2(){['n11','n12','n21','n22'].forEach((k,i)=>$(k).value=T2.n[i]);$('r1').value=T2.r[0];$('r2').value=T2.r[1];$('c1').value=T2.c[0];$('c2').value=T2.c[1]}
+function render2(){
+  const s=stats2(T2.n),[r1,r2]=T2.r.map(esc),[c1,c2]=T2.c.map(esc);
+  $('m1').textContent=s.r1;$('m2').textContent=s.r2;$('mc1').textContent=s.c1;$('mc2').textContent=s.c2;$('mN').textContent=s.N;
+  const lo=Math.max(0,s.r1+s.c1-s.N),hi=Math.min(s.r1,s.c1),sl=$('slide');sl.min=lo;sl.max=hi;sl.value=s.a;$('slidev').textContent=s.a;sl.disabled=hi<=lo;
+  const ph=k=>stats2([k,s.r1-k,s.c1-k,s.N-s.r1-s.c1+k]).phi;
+  $('slideTip').innerHTML=hi>lo?`Součty řádků a sloupců zůstávají stejné. Při těchto součtech může φ nabýt hodnot od <b>${fx(ph(lo),2)}</b> do <b>${fx(ph(hi),2)}</b>.`:'Při těchto součtech nelze buňky přesouvat.';
+  $('phiBig').textContent=isNaN(s.phi)?'φ nelze spočítat':'φ = '+fx(s.phi,2);
+  $('phiLab').textContent=isNaN(s.phi)?'prázdný řádek nebo sloupec':strength(s.phi)+' asociace';
+  $('st2').innerHTML=`<span>čitatel n₁₁·n₂₂ − n₁₂·n₂₁</span><span>${fx(s.a*s.d-s.b*s.c,0)}</span><span>jmenovatel √(n₁*·n₂*·n*₁·n*₂)</span><span>${fx(Math.sqrt(s.r1*s.r2*s.c1*s.c2),1)}</span>`+
+    `<span>φ² (vysvětlená variabilita)</span><span>${isNaN(s.phi)?'–':pc(s.phi*s.phi,1)}</span>`+
+    `<span>${c1} ve skupině ${r1}</span><span>${s.r1?pc(s.a/s.r1):'–'}</span><span>${c1} ve skupině ${r2}</span><span>${s.r2?pc(s.c/s.r2):'–'}</span>`;
+  let say;
+  if(isNaN(s.phi))say='Jeden řádek nebo sloupec je celý nulový, proto nelze φ spočítat.';
+  else if(Math.abs(s.phi)<.005)say=`Obě skupiny mají stejný podíl ${c1} (${pc(s.c1/s.N)}). Proměnné spolu nesouvisejí.`;
+  else{const pos=s.phi>0;say=`Spolu se častěji vyskytuje <b>${r1}</b> s <b>${pos?c1:c2}</b> a <b>${r2}</b> s <b>${pos?c2:c1}</b> (${pos?'hlavní':'vedlejší'} diagonála). Asociace je ${strength(s.phi)} (φ = ${fx(s.phi,2)}).`}
+  $('say2').innerHTML=say;
+  const o1=s.b?s.a/s.b:Infinity,o2=s.d?s.c/s.d:Infinity,OR=(s.b*s.c)?(s.a*s.d)/(s.b*s.c):(s.a*s.d?Infinity:NaN);
+  const fo=v=>isNaN(v)?'–':v===Infinity?'∞':fx(v,2);
+  $('orSt').innerHTML=`<span>šance na ${c1} u ${r1} (n₁₁/n₁₂)</span><span>${fo(o1)}</span><span>šance na ${c1} u ${r2} (n₂₁/n₂₂)</span><span>${fo(o2)}</span><span>OR = (n₁₁·n₂₂)/(n₁₂·n₂₁)</span><span>${fo(OR)}</span>`;
+  $('orSay').innerHTML=isNaN(OR)?'OR nelze spočítat.':OR===Infinity?'Ve jmenovateli je nula, OR je neomezeně velký.':
+    `Skupina ${r1} má ${fo(OR)}× ${OR>=1?'vyšší':'nižší (tj. vyšší jen '+fo(OR)+'×)'} šanci na ${c1} než skupina ${r2}. OR = 1 odpovídá φ = 0.`;
+  mosaic2($('s2'),T2,{nums:true,counts:true});legend($('leg2'),T2.c);meter(s.phi);
+}
+$('pre').onchange=e=>{T2=JSON.parse(JSON.stringify(PRE[e.target.value]));fill2();render2()};
+['n11','n12','n21','n22'].forEach((k,i)=>$(k).addEventListener('input',e=>{T2.n[i]=Math.max(0,Math.round(+e.target.value||0));render2()}));
+['r1','r2'].forEach((k,i)=>$(k).addEventListener('input',e=>{T2.r[i]=e.target.value;render2()}));
+['c1','c2'].forEach((k,i)=>$(k).addEventListener('input',e=>{T2.c[i]=e.target.value;render2()}));
+$('slide').addEventListener('input',e=>{const s=stats2(T2.n),k=+e.target.value;T2.n=[k,s.r1-k,s.c1-k,s.N-s.r1-s.c1+k];fill2();render2()});
+$('swC').onclick=()=>{const n=T2.n;T2.n=[n[1],n[0],n[3],n[2]];T2.c.reverse();fill2();render2()};
+$('swR').onclick=()=>{const n=T2.n;T2.n=[n[2],n[3],n[0],n[1]];T2.r.reverse();fill2();render2()};
+$('x10').onclick=()=>{T2.n=T2.n.map(v=>v*10);fill2();render2()};
+$('showOR').onchange=e=>$('orBox').hidden=!e.target.checked;
+
+/* ---------- guessing game ---------- */
+const NAMES=[['Věk','do 30 let','30 a více','Používá neobanku','ano','ne'],['Studijní obor','FaŘ','jiný','Má kreditní kartu','ano','ne'],['Typ klienta','firma','fyz. osoba','Splácí včas','ano','ne'],['Region','město','venkov','Nakupuje online','ano','ne'],['Zaměstnání','plný úvazek','jiné','Investuje','ano','ne']];
+let G={t:null,shown:false,n:0,err:0,sign:0};
+function newGame(){const nm=NAMES[Math.floor(Math.random()*NAMES.length)];let t,s;
+  do{const N=80+Math.floor(Math.random()*320),pr=.25+Math.random()*.5,u=.05+Math.random()*.9,v=.05+Math.random()*.9;
+    const r1=Math.round(N*pr),r2=N-r1,a=Math.round(r1*u),c=Math.round(r2*v);
+    t={rv:nm[0],cv:nm[3],r:[nm[1],nm[2]],c:[nm[4],nm[5]],n:[a,r1-a,c,r2-c]};s=stats2(t.n)}while(isNaN(s.phi));
+  G.t=t;G.shown=false;$('res3').hidden=true;$('tab3').hidden=true;$('reveal').disabled=false;draw3()}
+function draw3(){mosaic2($('s3'),G.t,{nums:$('nums3').checked||G.shown,counts:G.shown});legend($('leg3'),G.t.c)}
+$('guess').addEventListener('input',e=>$('guessv').textContent=fx(+e.target.value,2));
+$('nums3').onchange=draw3;
+$('reveal').onclick=()=>{if(G.shown)return;const s=stats2(G.t.n),gs=+$('guess').value,e=Math.abs(gs-s.phi);
+  G.shown=true;G.n++;G.err+=e;if(Math.sign(gs)!==Math.sign(s.phi)&&Math.abs(s.phi)>=.1)G.sign++;
+  $('res3').innerHTML=`<span>skutečné φ</span><span>${fx(s.phi,2)}</span><span>váš odhad</span><span>${fx(gs,2)}</span><span>chyba</span><span>${fx(e,2)}</span><span>síla</span><span>${strength(s.phi)}</span>`;
+  $('res3').hidden=false;const t=G.t;
+  $('tab3').innerHTML=`<table><thead><tr><th class="corner"><b>${esc(t.rv)}</b> \\ ${esc(t.cv)}</th><th>${esc(t.c[0])}</th><th>${esc(t.c[1])}</th></tr></thead><tbody><tr><th class="rl">${esc(t.r[0])}</th><td>${t.n[0]}</td><td>${t.n[1]}</td></tr><tr><th class="rl">${esc(t.r[1])}</th><td>${t.n[2]}</td><td>${t.n[3]}</td></tr></tbody></table>`;
+  $('tab3').hidden=false;$('reveal').disabled=true;
+  $('sc_n').textContent=G.n;$('sc_e').textContent=fx(G.err/G.n,2);$('sc_s').textContent=G.sign;draw3()};
+$('next').onclick=newGame;
+$('reset3').onclick=()=>{G.n=0;G.err=0;G.sign=0;$('sc_n').textContent=0;$('sc_e').textContent='–';$('sc_s').textContent=0};
+
+/* ---------- exercises (numbers computed from the same data) ---------- */
+function buildEx(){
+  const b=DS.shop,bk=DS.banka,mb=marg(b),mk=marg(bk);
+  const zC=b.n[0][0]/mb.R[0],mC=b.n[1][0]/mb.R[1],mM=b.n[1][2]/mb.C[2];
+  const appY=bk.n[0][0]/mk.R[0],appO=bk.n[2][0]/mk.R[2],appMid=bk.n[1][0]/mk.C[0],appYc=bk.n[0][0]/mk.C[0],pobO=bk.n[2][2]/mk.C[2];
+  const p1=stats2(PRE.shop.n).phi,p2=stats2(PRE.vik.n).phi;
+  const ex=[
+   ['Řádková, nebo sloupcová?','tab. 1, e-shop',`Jaké procento objednávek z mobilu je zaplaceno kartou a jaké z počítače? Kterou tabulku procent k tomu potřebujete?`,
+    `Řádkovou, protože srovnáváme skupiny mobil a počítač mezi sebou. Mobil ${pc(zC)}, počítač ${pc(mC)}. V absolutních číslech je to obráceně (${b.n[0][0]} vs. ${b.n[1][0]}), protože z mobilu je objednávek víc.`],
+   ['Otázka obráceně','tab. 1, e-shop',`Kolik procent plateb převodem přišlo z počítače? Proč to není totéž jako „kolik procent objednávek z počítače je placeno převodem“?`,
+    `Sloupcová procenta: ${pc(mM)}. Jmenovatel je počet převodů (${mb.C[2]}), ne počet objednávek z počítače (${mb.R[1]}). Z počítače je převodem placeno jen ${pc(b.n[1][2]/mb.R[1])} objednávek, ale mezi převody je počítačů nadpoměrně: ${pc(mM)} oproti ${pc(mb.R[1]/mb.N)} v celém vzorku.`],
+   ['Kdo používá aplikaci?','tab. 1, banka',`Tvrzení A: „Aplikaci nejvíc používají lidé 18–29.“ Tvrzení B: „Většina uživatelů aplikace je ve věku 30–49.“ Mohou platit obě? Která procenta podporují které tvrzení?`,
+    `Platí obě. A vychází z řádkových procent: aplikaci volí ${pc(appY)} lidí 18–29, ale jen ${pc(appO)} lidí 50+. B vychází ze sloupcových: z uživatelů aplikace je ${pc(appMid)} ve věku 30–49 a jen ${pc(appYc)} ve věku 18–29, protože skupina 30–49 je největší. Banka, která plánuje pobočky, se ptá sloupcově: ${pc(pobO)} klientů poboček je 50+.`],
+   ['K čemu jsou celková procenta?','tab. 1',`Přepněte na celková procenta a mozaikový graf. Na jakou otázku odpovídají? Proč se jimi skupiny špatně srovnávají?`,
+    `Říkají, jak častá je kombinace v celém vzorku (např. „mobil a Apple/Google Pay“). Míchají dohromady velikost skupiny a chování ve skupině, takže větší skupina má vyšší procenta, i když se chová stejně. V mozaice je to vidět jako plocha dílku.`],
+   ['Spočítejte φ ručně','tab. 2',`Platby z tabulky 1 sloučíme na digitální (karta + Apple/Google Pay) a jiné. Vznikne tabulka mobil 100 / 40, počítač 32 / 28. Spočítejte φ podle vzorce a ověřte v záložce 2 (příklad „zařízení × digitální platba“). Jak to zapíšete do textu?`,
+    `(100·28 − 40·32)/√(140·60·132·68) = 1520/${fx(Math.sqrt(140*60*132*68),1)} = ${fx(p1,2)}. Objednávky z mobilu jsou častěji placeny digitálně, objednávky z počítače jinak. Asociace je slabá (φ = ${fx(p1,2)}).`],
+   ['φ = 0 s nerovnými skupinami','tab. 2',`Sestavte tabulku, kde má první skupina 100 lidí, druhá 50, a φ = 0. Co musí platit?`,
+    `Obě skupiny musí mít stejné řádkové podíly, např. 20/80 a 10/40. V grafu leží obě hranice na čárkované čáře. Velikost skupin na φ = 0 nemá vliv.`],
+   ['Proč φ nedosáhne 1?','tab. 2',`Nastavte n₁₁ = 30, n₁₂ = 0, n₂₁ = 30, n₂₂ = 40 Posuvník je už na maximu. Proč nejde dál a φ nevyjde 1?`,
+    `Řádkové součty jsou 30 a 70, sloupcové 60 a 40. Aby φ = 1, musely by mimo diagonálu být nuly, a to jde jen při stejných okrajích. Při nerovných okrajích je maximum φ menší než 1.`],
+   ['Prohození kategorií','tab. 2',`Klikněte na „Prohodit sloupce“. Co se stane s φ? A s OR (pokud ho máte zapnutý)? Co to říká o znaménku φ u nominálních proměnných?`,
+    `φ změní znaménko, velikost zůstane. OR se změní na 1/OR. Pořadí kategorií je u nominálních proměnných libovolné, proto znaménko samo nic neříká. Do textu se píše, které kategorie se vyskytují spolu.`],
+   ['Více dat, silnější vztah?','tab. 2',`Klikněte na „Všechno × 10“. Změní se φ? Co to znamená pro srovnání studií s různě velkým vzorkem?`,
+    `φ se nezmění, závisí jen na poměrech v tabulce, ne na N. Větší vzorek dává přesnější odhad, ne silnější vztah (o přesnosti později u testování hypotéz).`],
+   ['Zápis výsledku','tab. 2',`Načtěte příklad „víkend × vrácení zboží“. Zapište výsledek jednou větou do výsledkové části práce. Kolik procent variability jedna proměnná vysvětluje?`,
+    `Např.: „Asociace mezi dnem objednávky a vrácením zboží byla zanedbatelná (φ = ${fx(p2,2)}), vráceno bylo ${pc(12/120)} víkendových a ${pc(25/280)} ostatních objednávek.“ φ² = ${pc(p2*p2,2)}, tedy prakticky nic. Tabulku 2 × 2 se 4 čísly stačí popsat větou.`]
+  ];
+  $('ex').innerHTML=ex.map(([h,tag,q,a])=>`<li><h3>${h}<span class="tag">${tag}</span></h3><p>${q}</p><details><summary>Řešení</summary><div>${a}</div></details></li>`).join('');
+}
+
+/* ---------- tabs ---------- */
+document.querySelector('nav').onclick=e=>{const b=e.target.closest('button');if(!b)return;
+  document.querySelectorAll('nav button').forEach(x=>{x.setAttribute('aria-selected',x===b);$(x.dataset.tab).hidden=x!==b});
+  try{localStorage.setItem('kt_tab',b.dataset.tab)}catch(_){}};
+try{const t=localStorage.getItem('kt_tab');if(t){const b=document.querySelector(`nav button[data-tab="${t}"]`);if(b)b.click()}}catch(_){}
+
+render1();updBtns();fill2();render2();$('guessv').textContent=fx(0,2);newGame();buildEx();
+</script>
+
+</body></html>
