@@ -1,0 +1,671 @@
+<!doctype html><html lang="cs"><head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;padding:0}img{max-width:100%}[hidden]{display:none!important}</style></head><body>
+<title>Pravděpodobnost v lavici</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: same system as the other Statistika pages (Regrese, Kontingence, Pravděpodobnost v pokusech); projector-first tool — tab rail on top, one activity per view, controls left of results; student view is a single phone card. */
+:root{
+  --bg:#f6f7f9; --surface:#ffffff; --ink:#18212b; --muted:#5b6773; --line:#d9dee4;
+  --accent:#1f5fa8; --accent-soft:#eaf0f7; --accent2:#d0661c; --accent2-soft:#fbeadc;
+  --good:#2a8f6a; --bad:#b4233a;
+  --f-display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-body:"Instrument Sans", ui-sans-serif, system-ui, sans-serif;
+  --f-mono:"JetBrains Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#12171d; --surface:#1a2129; --ink:#e6ebf0; --muted:#9aa6b2; --line:#2e3843;
+  --accent:#6aa7ec; --accent-soft:#1f2a36; --accent2:#f0954f; --accent2-soft:#3a2a1c;
+  --good:#4fb88f; --bad:#e2607a; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#12171d; --surface:#1a2129; --ink:#e6ebf0; --muted:#9aa6b2; --line:#2e3843;
+  --accent:#6aa7ec; --accent-soft:#1f2a36; --accent2:#f0954f; --accent2-soft:#3a2a1c;
+  --good:#4fb88f; --bad:#e2607a; color-scheme:dark}
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.55;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 48px}
+.wrap{max-width:1180px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0;line-height:1.15}
+h1{font-size:1.9rem;font-weight:800;letter-spacing:-.01em}
+h2{font-size:1.45rem;font-weight:700}
+h3{font-size:1.08rem;font-weight:700}
+p{margin:0;max-width:68ch}
+.muted{color:var(--muted)}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+header.top{display:flex;flex-wrap:wrap;align-items:end;justify-content:space-between;gap:12px 24px}
+.kicker{font-size:.8rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
+nav.tabs{display:flex;flex-wrap:wrap;gap:6px;border-bottom:2px solid var(--line);padding-bottom:0}
+nav.tabs button{font:600 1rem var(--f-body);background:none;border:0;color:var(--muted);padding:8px 14px;border-bottom:3px solid transparent;margin-bottom:-2px;cursor:pointer;border-radius:6px 6px 0 0}
+nav.tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent)}
+nav.tabs button:hover{color:var(--ink);background:var(--accent-soft)}
+button:focus-visible,textarea:focus-visible,input:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+
+section.view{display:flex;flex-direction:column;gap:18px}
+.intro{display:flex;flex-direction:column;gap:6px}
+.steps{display:flex;flex-wrap:wrap;gap:8px 18px;color:var(--muted);font-size:.95rem;padding:0;margin:0;list-style:none}
+.steps li b{color:var(--ink);font-family:var(--f-mono);margin-right:4px}
+.cols{display:grid;grid-template-columns:minmax(0,340px) minmax(0,1fr);gap:20px;align-items:start}
+@media (max-width:860px){.cols{grid-template-columns:minmax(0,1fr)}}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.panel.plain{background:none;border:0;padding:0}
+label.lab{font-weight:600;font-size:.92rem}
+textarea{width:100%;min-height:150px;resize:vertical;font:400 .9rem var(--f-mono);background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:10px}
+.btns{display:flex;flex-wrap:wrap;gap:8px}
+.btn{font:600 .95rem var(--f-body);border-radius:8px;padding:8px 14px;cursor:pointer;border:1px solid var(--accent);background:var(--accent);color:var(--surface)}
+.btn.ghost{background:transparent;color:var(--accent)}
+.btn.ghost:hover{background:var(--accent-soft)}
+.btn.small{padding:4px 10px;font-size:.85rem}
+.btn[disabled]{opacity:.45;cursor:default}
+.note{font-size:.88rem;color:var(--muted)}
+.badge{display:inline-block;font:600 .78rem var(--f-body);letter-spacing:.04em;text-transform:uppercase;padding:2px 8px;border-radius:999px}
+.badge.g1{background:var(--accent-soft);color:var(--accent)}
+.badge.g2{background:var(--accent2-soft);color:var(--accent2)}
+.badge.ex{background:var(--accent2-soft);color:var(--accent2)}
+.stats{display:flex;flex-wrap:wrap;gap:8px 22px}
+.stat{display:flex;flex-direction:column}
+.stat .v{font:700 1.5rem var(--f-display);font-variant-numeric:tabular-nums}
+.stat .k{font-size:.82rem;color:var(--muted)}
+.chartbox{overflow-x:auto}
+svg.chart{width:100%;height:auto;display:block;min-width:420px}
+svg .grid{stroke:var(--line);stroke-width:1}
+svg .axis{stroke:var(--muted);stroke-width:1}
+svg .tick{fill:var(--muted);font:12px var(--f-mono)}
+svg .lbl{fill:var(--ink);font:600 13px var(--f-body)}
+svg .bar.s1{fill:var(--accent)}
+svg .bar.s2{fill:var(--accent2)}
+svg .theory{fill:none;stroke:var(--ink);stroke-width:2;stroke-dasharray:5 4}
+svg .tdot{fill:var(--ink)}
+svg .dot{fill:var(--accent);fill-opacity:.75}
+svg .dot2{fill:var(--accent2)}
+svg .curve{fill:none;stroke:var(--accent);stroke-width:3}
+svg .mark{stroke:var(--accent2);stroke-width:2}
+svg .band{fill:var(--accent-soft)}
+svg .med{stroke:var(--ink);stroke-width:3}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:.88rem;color:var(--muted)}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+.legend i.s1{background:var(--accent)} .legend i.s2{background:var(--accent2)}
+.legend i.t{background:none;border-top:2px dashed var(--ink);border-radius:0;height:0;width:18px;vertical-align:4px}
+.empty{border:1px dashed var(--line);border-radius:10px;padding:24px;color:var(--muted);text-align:center}
+
+/* coin cards */
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:14px}
+.ccard{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.ccard header{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.ccard .letter{font:800 1.6rem var(--f-display)}
+.seq{display:grid;grid-template-columns:repeat(10,1fr);gap:4px;font:600 1rem var(--f-mono)}
+.seq span{text-align:center;padding:3px 0;border-radius:4px;background:var(--bg);border:1px solid var(--line)}
+.seq span.run{background:var(--accent2-soft);border-color:var(--accent2);color:var(--accent2)}
+.ccard.g1 .seq span.run{background:var(--accent-soft);border-color:var(--accent);color:var(--accent)}
+.ccard .info{font-size:.9rem;color:var(--muted)}
+
+/* bayes */
+.tree{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.node{border:1px solid var(--line);border-radius:8px;padding:10px;background:var(--bg)}
+.node.root{grid-column:1/-1;text-align:center}
+.node .n{font:700 1.3rem var(--f-display);font-variant-numeric:tabular-nums}
+.node .sub{display:flex;justify-content:space-between;gap:8px;font-size:.9rem;margin-top:6px;flex-wrap:wrap}
+.node .sub b{font-family:var(--f-mono)}
+.waffle{display:flex;flex-wrap:wrap;gap:3px}
+.waffle i{width:14px;height:14px;border-radius:2px;background:var(--accent2)}
+.waffle i.t{background:var(--accent)}
+.big{font:800 3rem var(--f-display);font-variant-numeric:tabular-nums;color:var(--accent);line-height:1}
+.slider{display:flex;flex-direction:column;gap:2px}
+.slider .row{display:flex;justify-content:space-between;gap:8px;font-size:.92rem}
+.slider input{width:100%;accent-color:var(--accent)}
+
+/* birthdays calendar */
+.cal{display:grid;grid-template-columns:44px repeat(31,18px);gap:3px;font:11px var(--f-mono);color:var(--muted);width:max-content}
+.cal div{height:18px;display:flex;align-items:center;justify-content:center;border-radius:3px}
+.cal .c{background:var(--bg);border:1px solid var(--line)}
+.cal .c.x{background:transparent;border-color:transparent}
+.cal .c.one{background:var(--accent);border-color:var(--accent)}
+.cal .c.two{background:var(--accent2);border-color:var(--accent2);color:var(--surface);font-weight:600}
+.matchlist{display:flex;flex-wrap:wrap;gap:8px}
+.matchlist span{background:var(--accent2-soft);color:var(--accent2);font-weight:600;padding:4px 10px;border-radius:999px}
+
+/* questions */
+.qgroup{display:flex;flex-direction:column;gap:10px}
+.q{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 14px}
+.q .type{font-size:.8rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-weight:600}
+.q .text{font-weight:600}
+.q ul{margin:2px 0 0;padding-left:20px}
+.q .ans{grid-column:1/-1;font-size:.92rem;color:var(--muted);border-top:1px solid var(--line);padding-top:8px}
+.q .ans b{color:var(--good)}
+.q .copy{align-self:start}
+@media (max-width:560px){.q{grid-template-columns:minmax(0,1fr)}}
+
+/* student */
+body.student-mode header.top, body.student-mode nav.tabs{display:none}
+.phone{max-width:460px;margin:0 auto;width:100%;display:flex;flex-direction:column;gap:16px}
+.grp{border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:6px}
+.grp.g1{background:var(--accent-soft)} .grp.g2{background:var(--accent2-soft)}
+.grp h2{font-size:1.35rem}
+.coinwrap{display:flex;justify-content:center;perspective:700px;padding:8px 0}
+.coin{width:180px;height:180px;border-radius:50%;border:0;cursor:pointer;font:800 4.6rem var(--f-display);color:var(--surface);
+  background:radial-gradient(circle at 35% 30%, var(--accent-soft) 0 8%, var(--accent) 45%, var(--ink) 140%);
+  box-shadow:inset 0 0 0 10px rgba(255,255,255,.18), 0 6px 0 var(--line);transition:transform .45s ease}
+.coin.flip{transform:rotateY(720deg) translateY(-14px)}
+@media (prefers-reduced-motion: reduce){.coin{transition:none}.coin.flip{transform:none}}
+.keypad{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.keypad button{font:800 2.4rem var(--f-display);padding:18px 0;border-radius:12px;border:2px solid var(--accent2);background:var(--surface);color:var(--accent2);cursor:pointer}
+.keypad button.back{grid-column:1/-1;font:600 1rem var(--f-body);padding:10px;border-color:var(--line);color:var(--muted)}
+.counter{font:700 1.1rem var(--f-mono);text-align:center}
+.code{font:600 1.15rem var(--f-mono);background:var(--surface);border:2px solid var(--ink);border-radius:10px;padding:14px;word-break:break-all;text-align:center;user-select:all}
+.backlink{align-self:flex-start}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div>
+      <div class="kicker"><a href="../" style="color:inherit">Statistika</a> · přednáška 12–13</div>
+      <h1>Pravděpodobnost v lavici</h1>
+    </div>
+    <p class="note">Data sbírá Particify, tady je vyhodnotíte. Studentská obrazovka mince: tato adresa + <span class="mono">#student</span>.</p>
+  </header>
+
+  <nav class="tabs" role="tablist" aria-label="Aktivity">
+    <button role="tab" data-view="mince">Mince</button>
+    <button role="tab" data-view="telefony">Telefonní čísla</button>
+    <button role="tab" data-view="narozeniny">Narozeniny</button>
+    <button role="tab" data-view="bayes">Podvodné transakce</button>
+    <button role="tab" data-view="slova">„Pravděpodobně“</button>
+    <button role="tab" data-view="otazky">Otázky do Particify</button>
+  </nav>
+
+  <!-- ============ MINCE (učitel) ============ -->
+  <section class="view" id="v-mince" hidden>
+    <div class="intro">
+      <h2>Vymyšlená, nebo skutečná mince?</h2>
+      <ul class="steps">
+        <li><b>1</b>Studenti otevřou studentskou obrazovku, ta je náhodně rozdělí.</li>
+        <li><b>2</b>Kód z telefonu vloží do Particify (volný text). Odpovědi nepromítejte.</li>
+        <li><b>3</b>Odpovědi vložte sem, vyberte 3 + 3 a nechte třídu hádat.</li>
+      </ul>
+    </div>
+    <div class="cols">
+      <div class="panel">
+        <label class="lab" for="coinInput">Odpovědi z Particify</label>
+        <textarea id="coinInput" placeholder="#1 PPOOPOPPPOOOPOPOOPPOOOPPPPOPOO&#10;#2 POPOPPOPOOPOPPOPOPOOPOPPOPOOPO&#10;…"></textarea>
+        <div class="btns">
+          <button class="btn" id="coinLoad">Načíst</button>
+          <button class="btn ghost" id="coinDemo">Ukázková data</button>
+        </div>
+        <p class="note" id="coinCount">Zatím nic načteno.</p>
+        <button class="btn ghost small backlink" id="openStudent">Náhled studentské obrazovky</button>
+      </div>
+      <div class="panel plain">
+        <div class="btns">
+          <button class="btn" id="coinPick" disabled>Vybrat 3 + 3</button>
+          <button class="btn ghost" id="coinReveal" disabled>Odhalit skupiny</button>
+        </div>
+        <div id="coinCards" class="cards"><div class="empty">Po načtení odpovědí vyberte 3 skutečné a 3 vymyšlené řady. Karty se zobrazí bez označení skupiny.</div></div>
+        <div id="coinSummary" class="panel" hidden></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ STUDENT ============ -->
+  <section class="view" id="v-student" hidden>
+    <div class="phone">
+      <button class="btn ghost small backlink" id="backTeacher" hidden>← Zpět do učitelského režimu</button>
+      <div id="stuGroup" class="grp"></div>
+      <div id="stuInput"></div>
+      <div class="counter" id="stuCounter"></div>
+      <div class="seq" id="stuSeq"></div>
+      <div id="stuDone" hidden style="display:flex;flex-direction:column;gap:10px">
+        <h3>Hotovo. Vložte tento kód do Particify:</h3>
+        <div class="code" id="stuCode"></div>
+        <button class="btn" id="stuCopy">Zkopírovat kód</button>
+        <button class="btn ghost small" id="stuReset">Začít znovu</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ TELEFONY ============ -->
+  <section class="view" id="v-telefony" hidden>
+    <div class="intro">
+      <h2>Centrální limitní věta z telefonních čísel</h2>
+      <ul class="steps">
+        <li><b>1</b>Particify: „Napište posledních 5 číslic svého telefonu.“</li>
+        <li><b>2</b>Vložte odpovědi, aplikace spočítá poslední cifru, součet dvou a průměr pěti.</li>
+        <li><b>3</b>Porovnejte tvar se šedou teoretickou čárou, pak pusťte 1 000 simulovaných čísel.</li>
+      </ul>
+    </div>
+    <div class="cols">
+      <div class="panel">
+        <label class="lab" for="telInput">Odpovědi (posledních 5 číslic)</label>
+        <textarea id="telInput" placeholder="45213&#10;80 917&#10;…"></textarea>
+        <div class="btns">
+          <button class="btn" id="telLoad">Vyhodnotit</button>
+          <button class="btn ghost" id="telDemo">Ukázková třída</button>
+          <button class="btn ghost" id="telSim">1 000 simulovaných</button>
+        </div>
+        <p class="note" id="telCount">Zatím nic načteno.</p>
+      </div>
+      <div class="panel plain" id="telOut"><div class="empty">Vložte čísla nebo načtěte ukázkovou třídu.</div></div>
+    </div>
+  </section>
+
+  <!-- ============ NAROZENINY ============ -->
+  <section class="view" id="v-narozeniny" hidden>
+    <div class="intro">
+      <h2>Narozeninový paradox</h2>
+      <ul class="steps">
+        <li><b>1</b>Particify: tip „kolik lidí pro 50% šanci na shodu?“</li>
+        <li><b>2</b>Ukažte křivku, pak sbírejte den a měsíc narození.</li>
+        <li><b>3</b>Vložte data a podívejte se, jestli má třída shodu.</li>
+      </ul>
+    </div>
+    <div class="cols">
+      <div class="panel">
+        <div class="slider">
+          <div class="row"><label class="lab" for="bdN">Počet lidí v místnosti</label><span class="mono" id="bdNv">23</span></div>
+          <input type="range" id="bdN" min="2" max="70" value="23">
+        </div>
+        <div><div class="big" id="bdP">50,7 %</div><p class="note">pravděpodobnost, že aspoň dva mají narozeniny stejný den (365 dní, rovnoměrně)</p></div>
+        <label class="lab" for="bdInput">Data narození třídy (den.měsíc)</label>
+        <textarea id="bdInput" placeholder="5.3.&#10;17.11.&#10;…"></textarea>
+        <div class="btns">
+          <button class="btn" id="bdLoad">Vyhodnotit</button>
+          <button class="btn ghost" id="bdDemo">Ukázková třída</button>
+        </div>
+        <p class="note" id="bdCount">Zatím nic načteno.</p>
+      </div>
+      <div class="panel plain">
+        <div class="panel"><h3>Pravděpodobnost shody podle počtu lidí</h3><div class="chartbox" id="bdCurve"></div></div>
+        <div class="panel" id="bdOut"><div class="empty">Po vložení dat se tu ukáže kalendář třídy a nalezené shody.</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ BAYES ============ -->
+  <section class="view" id="v-bayes" hidden>
+    <div class="intro">
+      <h2>Systém spustil poplach. Je to podvod?</h2>
+      <ul class="steps">
+        <li><b>1</b>Particify: tip v %, bez výpočtu.</li>
+        <li><b>2</b>Projděte strom v absolutních počtech.</li>
+        <li><b>3</b>Vložte tipy a porovnejte se skutečností. Pak měňte posuvníky.</li>
+      </ul>
+    </div>
+    <div class="cols">
+      <div class="panel">
+        <div class="slider"><div class="row"><label class="lab" for="byPrev">Podvodů z 10 000 transakcí</label><span class="mono" id="byPrevV"></span></div><input type="range" id="byPrev" min="1" max="500" value="10"></div>
+        <div class="slider"><div class="row"><label class="lab" for="bySens">Systém odhalí podvod</label><span class="mono" id="bySensV"></span></div><input type="range" id="bySens" min="50" max="100" step="1" value="99"></div>
+        <div class="slider"><div class="row"><label class="lab" for="byFp">Falešný poplach u poctivé transakce</label><span class="mono" id="byFpV"></span></div><input type="range" id="byFp" min="0" max="10" step="0.1" value="1"></div>
+        <div><div class="big" id="byRes"></div><p class="note">P(podvod | poplach)</p></div>
+        <label class="lab" for="byInput">Tipy studentů (%)</label>
+        <textarea id="byInput" style="min-height:100px" placeholder="90&#10;95&#10;50&#10;…"></textarea>
+        <div class="btns"><button class="btn" id="byLoad">Vyhodnotit tipy</button><button class="btn ghost" id="byDemo">Ukázkové tipy</button></div>
+      </div>
+      <div class="panel plain">
+        <div class="panel"><h3>10 000 transakcí</h3><div class="tree" id="byTree"></div></div>
+        <div class="panel"><h3>Všechny poplachy</h3><div class="legend"><span><i class="s1"></i>skutečný podvod</span><span><i class="s2"></i>poctivá transakce</span><span id="byScale"></span></div><div class="waffle" id="byWaffle"></div></div>
+        <div class="panel" id="byGuessOut" hidden></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ SLOVA ============ -->
+  <section class="view" id="v-slova" hidden>
+    <div class="intro">
+      <h2>Kolik procent je „pravděpodobně“?</h2>
+      <ul class="steps">
+        <li><b>1</b>Particify: čtyři otázky, každý zadá číslo 0–100.</li>
+        <li><b>2</b>Vložte odpovědi k jednotlivým výrazům.</li>
+        <li><b>3</b>Ukažte, jak moc se pásy překrývají.</li>
+      </ul>
+    </div>
+    <div class="cols">
+      <div class="panel">
+        <label class="lab" for="w0">„téměř jistě“</label><textarea id="w0" style="min-height:70px"></textarea>
+        <label class="lab" for="w1">„pravděpodobně“</label><textarea id="w1" style="min-height:70px"></textarea>
+        <label class="lab" for="w2">„možná“</label><textarea id="w2" style="min-height:70px"></textarea>
+        <label class="lab" for="w3">„nepravděpodobně“</label><textarea id="w3" style="min-height:70px"></textarea>
+        <div class="btns"><button class="btn" id="wLoad">Vyhodnotit</button><button class="btn ghost" id="wDemo">Ukázková data</button></div>
+      </div>
+      <div class="panel" id="wOut"><div class="empty">Vložte odpovědi nebo načtěte ukázková data.</div></div>
+    </div>
+  </section>
+
+  <!-- ============ OTÁZKY ============ -->
+  <section class="view" id="v-otazky" hidden>
+    <div class="intro">
+      <h2>Otázky do Particify</h2>
+      <p class="muted">Texty ke zkopírování. Pod každou otázkou je, co čekat a jaká je správná odpověď.</p>
+    </div>
+    <div id="qList" style="display:flex;flex-direction:column;gap:22px"></div>
+  </section>
+</div>
+
+<script>
+(function(){
+"use strict";
+const $=s=>document.querySelector(s);
+const nf=(x,d=1)=>Number(x).toLocaleString('cs-CZ',{minimumFractionDigits:d,maximumFractionDigits:d});
+function rnd(){try{const a=new Uint32Array(1);crypto.getRandomValues(a);return a[0]/4294967296;}catch(e){return Math.random();}}
+function ri(n){return Math.floor(rnd()*n);}
+function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=ri(i+1);[a[i],a[j]]=[a[j],a[i]];}return a;}
+function sget(k){try{return localStorage.getItem(k);}catch(e){return null;}}
+function sset(k,v){try{localStorage.setItem(k,v);}catch(e){}}
+function sdel(k){try{localStorage.removeItem(k);}catch(e){}}
+const mean=a=>a.reduce((s,x)=>s+x,0)/a.length;
+const sd=a=>{if(a.length<2)return 0;const m=mean(a);return Math.sqrt(a.reduce((s,x)=>s+(x-m)**2,0)/(a.length-1));};
+function quant(a,p){const s=a.slice().sort((x,y)=>x-y);const i=(s.length-1)*p,lo=Math.floor(i),hi=Math.ceil(i);return s[lo]+(s[hi]-s[lo])*(i-lo);}
+function esc(t){return String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+
+async function copyText(text,btn,selEl){
+  const old=btn.textContent;
+  try{await navigator.clipboard.writeText(text);btn.textContent='Zkopírováno';}
+  catch(e){
+    if(selEl){const r=document.createRange();r.selectNodeContents(selEl);const s=getSelection();s.removeAllRanges();s.addRange(r);}
+    btn.textContent='Označeno, zkopírujte ručně';
+  }
+  setTimeout(()=>btn.textContent=old,1800);
+}
+
+/* ---------- generic bar chart ---------- */
+function niceStep(x){const p=Math.pow(10,Math.floor(Math.log10(x||1)));for(const m of [1,2,2.5,5,10]){if(m*p>=x)return m*p;}return 10*p;}
+function barChart(o){
+  const W=o.w||660,H=o.h||250,m={l:46,r:12,t:12,b:o.xTitle?46:28};
+  const iw=W-m.l-m.r,ih=H-m.t-m.b,k=o.labels.length,S=o.series.length;
+  let top=Math.max(0.0001,...o.series.flatMap(s=>s.values),...(o.theory||[0]));
+  const step=niceStep(top/4);const ymax=Math.ceil(top*1.05/step)*step;
+  const y=v=>m.t+ih*(1-v/ymax),bw=iw/k,x0=i=>m.l+bw*i;
+  const fy=o.yFmt||(v=>nf(v,step<1?1:0));
+  let g='';
+  for(let v=0;v<=ymax+1e-9;v+=step){g+=`<line class="grid" x1="${m.l}" x2="${W-m.r}" y1="${y(v)}" y2="${y(v)}"/><text class="tick" x="${m.l-6}" y="${y(v)+4}" text-anchor="end">${fy(v)}</text>`;}
+  const inner=bw*0.78,each=inner/S;
+  o.series.forEach((s,j)=>s.values.forEach((v,i)=>{const h=ih*v/ymax;g+=`<rect class="bar ${s.cls}" x="${x0(i)+bw*0.11+j*each}" y="${y(v)}" width="${Math.max(1,each-1)}" height="${Math.max(0,h)}" rx="2"/>`;}));
+  if(o.theory){const pts=o.theory.map((v,i)=>`${x0(i)+bw/2},${y(v)}`).join(' ');g+=`<polyline class="theory" points="${pts}"/>`;o.theory.forEach((v,i)=>g+=`<circle class="tdot" cx="${x0(i)+bw/2}" cy="${y(v)}" r="2.6"/>`);}
+  const every=Math.ceil(k/16);
+  o.labels.forEach((l,i)=>{if(i%every===0)g+=`<text class="tick" x="${x0(i)+bw/2}" y="${H-m.b+16}" text-anchor="middle">${esc(l)}</text>`;});
+  g+=`<line class="axis" x1="${m.l}" x2="${W-m.r}" y1="${y(0)}" y2="${y(0)}"/>`;
+  if(o.xTitle)g+=`<text class="lbl" x="${m.l+iw/2}" y="${H-6}" text-anchor="middle">${esc(o.xTitle)}</text>`;
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(o.aria||'graf')}">${g}</svg>`;
+}
+
+/* ---------- routing ---------- */
+const VIEWS=['mince','telefony','narozeniny','bayes','slova','otazky','student'];
+let teacherPreview=false;
+function show(v){
+  VIEWS.forEach(n=>{$('#v-'+n).hidden=(n!==v);});
+  document.querySelectorAll('nav.tabs button').forEach(b=>b.setAttribute('aria-selected',b.dataset.view===v?'true':'false'));
+  if(v==='student')initStudent();
+}
+document.querySelectorAll('nav.tabs button').forEach(b=>b.addEventListener('click',()=>show(b.dataset.view)));
+$('#openStudent').addEventListener('click',()=>{teacherPreview=true;$('#backTeacher').hidden=false;document.body.classList.add('student-mode');show('student');});
+$('#backTeacher').addEventListener('click',()=>{teacherPreview=false;$('#backTeacher').hidden=true;document.body.classList.remove('student-mode');show('mince');});
+
+/* ================= MINCE ================= */
+const N=30;
+function longestRun(s){let best=0,cur=0,prev='';let end=0;for(let i=0;i<s.length;i++){cur=s[i]===prev?cur+1:1;prev=s[i];if(cur>best){best=cur;end=i;}}return {len:best,start:end-best+1,end};}
+function switches(s){let c=0;for(let i=1;i<s.length;i++)if(s[i]!==s[i-1])c++;return c;}
+function realSeq(n=N){let s='';for(let i=0;i<n;i++)s+=rnd()<.5?'P':'O';return s;}
+function fakeSeq(n=N){let s=rnd()<.5?'P':'O';for(let i=1;i<n;i++){const sw=rnd()<0.68;s+=sw?(s[i-1]==='P'?'O':'P'):s[i-1];}return s;}
+// theory: longest run distribution for 30 fair flips
+const RUNCATS=['1','2','3','4','5','6','7','8','9+'];
+const runCat=l=>Math.min(l,9)-1;
+let THEORY_=null;
+function fastSeq(){let s='';for(let i=0;i<N;i++)s+=Math.random()<.5?'P':'O';return s;}
+function getTheory(){if(THEORY_)return THEORY_;THEORY_=(()=>{const c=new Array(9).fill(0);let sw=0,lr=0,ge5=0;const R=20000;for(let r=0;r<R;r++){const s=fastSeq();const l=longestRun(s).len;c[runCat(l)]++;lr+=l;sw+=switches(s);if(l>=5)ge5++;}return {pct:c.map(x=>100*x/R),meanLen:lr/R,meanSw:sw/R,ge5:100*ge5/R};})();return THEORY_;}
+
+// student
+let stuSeq='';let stuGrp=null;let flipping=false;
+function initStudent(){
+  stuGrp=sget('pvl_grp');if(stuGrp!=='1'&&stuGrp!=='2'){stuGrp=rnd()<.5?'1':'2';sset('pvl_grp',stuGrp);}
+  const saved=sget('pvl_seq');stuSeq=(saved&&/^[PO]*$/.test(saved))?saved.slice(0,N):'';
+  const g=$('#stuGroup');g.className='grp g'+stuGrp;
+  if(stuGrp==='1'){
+    g.innerHTML=`<span class="badge g1">Vaše skupina</span><h2>Skutečná mince</h2><p>Klepněte 30× na minci. Každý hod se zapíše sám, nic nevymýšlejte.</p>`;
+    $('#stuInput').innerHTML=`<div class="coinwrap"><button class="coin" id="coin" aria-label="Hodit mincí">?</button></div><p class="note" style="text-align:center">P = panna, O = orel</p>`;
+    $('#coin').addEventListener('click',flip);
+  }else{
+    g.innerHTML=`<span class="badge g2">Vaše skupina</span><h2>Vymyšlená řada</h2><p>Mincí neházejte. Naťukejte 30 hodů tak, jak by podle vás vypadala opravdová náhoda.</p>`;
+    $('#stuInput').innerHTML=`<div class="keypad"><button data-k="P">P</button><button data-k="O">O</button><button class="back" data-k="back">Smazat poslední</button></div><p class="note" style="text-align:center">P = panna, O = orel</p>`;
+    $('#stuInput').querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{if(b.dataset.k==='back')stuSeq=stuSeq.slice(0,-1);else if(stuSeq.length<N)stuSeq+=b.dataset.k;stuRender();}));
+  }
+  stuRender();
+}
+function flip(){
+  if(flipping||stuSeq.length>=N)return;flipping=true;
+  const c=$('#coin');const r=rnd()<.5?'P':'O';
+  const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  c.textContent='';c.classList.add('flip');
+  setTimeout(()=>{c.textContent=r;stuSeq+=r;stuRender();},reduce?0:300);
+  setTimeout(()=>{c.classList.remove('flip');flipping=false;},reduce?50:470);
+}
+function stuRender(){
+  sset('pvl_seq',stuSeq);
+  $('#stuCounter').textContent=`${stuSeq.length} / ${N}`;
+  let h='';for(let i=0;i<N;i++)h+=`<span>${stuSeq[i]||'&nbsp;'}</span>`;$('#stuSeq').innerHTML=h;
+  const done=stuSeq.length>=N;
+  $('#stuDone').hidden=!done;$('#stuDone').style.display=done?'flex':'none';
+  $('#stuInput').style.opacity=done?.35:1;
+  if(done)$('#stuCode').textContent=`#${stuGrp} ${stuSeq}`;
+}
+$('#stuCopy').addEventListener('click',e=>copyText($('#stuCode').textContent,e.currentTarget,$('#stuCode')));
+$('#stuReset').addEventListener('click',()=>{stuSeq='';stuRender();});
+
+// teacher
+let coinData=[];let picked=[];
+function parseCoin(t){
+  const out=[];
+  t.split(/\r?\n/).forEach(line=>{
+    const m=line.match(/[PpOo](?:[\s,;]*[PpOo]){9,}/);if(!m)return;
+    const s=m[0].replace(/[^PpOo]/g,'').toUpperCase();
+    const g=(line.match(/#\s*([12])/)||[])[1]||null;
+    out.push({g,s});
+  });
+  return out;
+}
+function coinLoaded(){
+  const n1=coinData.filter(d=>d.g==='1').length,n2=coinData.filter(d=>d.g==='2').length,nx=coinData.length-n1-n2;
+  $('#coinCount').innerHTML=coinData.length?`Načteno ${coinData.length} řad: <b>${n1}</b> skutečných, <b>${n2}</b> vymyšlených${nx?`, ${nx} bez skupiny (ignorovány)`:''}.`:'Nenašla jsem žádnou řadu P/O. Každá odpověď má vypadat jako <span class="mono">#1 PPOOP…</span>';
+  $('#coinPick').disabled=!(n1&&n2);$('#coinReveal').disabled=true;$('#coinSummary').hidden=true;
+}
+$('#coinLoad').addEventListener('click',()=>{coinData=parseCoin($('#coinInput').value);coinLoaded();});
+$('#coinDemo').addEventListener('click',()=>{const L=[];for(let i=0;i<30;i++){const g=rnd()<.5?'1':'2';L.push(`#${g} ${g==='1'?realSeq():fakeSeq()}`);}$('#coinInput').value=L.join('\n');coinData=parseCoin($('#coinInput').value);coinLoaded();$('#coinCount').innerHTML+=' <span class="badge ex">ukázková data</span>';});
+$('#coinPick').addEventListener('click',()=>{
+  const a=shuffle(coinData.filter(d=>d.g==='1')).slice(0,3),b=shuffle(coinData.filter(d=>d.g==='2')).slice(0,3);
+  picked=shuffle(a.concat(b));renderCards(false);$('#coinReveal').disabled=false;$('#coinSummary').hidden=true;
+});
+$('#coinReveal').addEventListener('click',()=>{renderCards(true);renderCoinSummary();});
+function renderCards(reveal){
+  $('#coinCards').innerHTML=picked.map((d,i)=>{
+    const L='ABCDEF'[i],r=longestRun(d.s);
+    const chips=d.s.split('').map((c,j)=>`<span class="${reveal&&j>=r.start&&j<=r.end?'run':''}">${c}</span>`).join('');
+    const badge=reveal?(d.g==='1'?'<span class="badge g1">skutečná</span>':'<span class="badge g2">vymyšlená</span>'):'';
+    const info=reveal?`<div class="info">nejdelší série: <b class="mono">${r.len}</b> · změn: <b class="mono">${switches(d.s)}</b> z ${d.s.length-1}</div>`:'';
+    return `<article class="ccard ${reveal?'g'+d.g:''}"><header><span class="letter">${L}</span>${badge}</header><div class="seq">${chips}</div>${info}</article>`;
+  }).join('');
+}
+function renderCoinSummary(){
+  const THEORY=getTheory();
+  const g1=coinData.filter(d=>d.g==='1'),g2=coinData.filter(d=>d.g==='2');
+  const dist=g=>{const c=new Array(9).fill(0);g.forEach(d=>c[runCat(longestRun(d.s).len)]++);return c.map(x=>g.length?100*x/g.length:0);};
+  const ml=g=>g.length?nf(mean(g.map(d=>longestRun(d.s).len))):'–',ms=g=>g.length?nf(mean(g.map(d=>switches(d.s)))):'–';
+  const p5=g=>g.length?nf(100*g.filter(d=>longestRun(d.s).len>=5).length/g.length,0)+' %':'–';
+  const box=$('#coinSummary');box.hidden=false;
+  box.innerHTML=`<h3>Celá třída</h3>
+  <div class="chartbox"><table class="mono" style="border-collapse:collapse;width:100%;min-width:420px;font-size:.92rem">
+   <thead><tr style="text-align:left;color:var(--muted)"><th style="padding:4px 8px"></th><th style="padding:4px 8px">n</th><th style="padding:4px 8px">průměrná nejdelší série</th><th style="padding:4px 8px">série 5+</th><th style="padding:4px 8px">průměrně změn</th></tr></thead>
+   <tbody>
+    <tr style="border-top:1px solid var(--line)"><td style="padding:4px 8px"><span class="badge g1">skutečná</span></td><td style="padding:4px 8px">${g1.length}</td><td style="padding:4px 8px">${ml(g1)}</td><td style="padding:4px 8px">${p5(g1)}</td><td style="padding:4px 8px">${ms(g1)}</td></tr>
+    <tr style="border-top:1px solid var(--line)"><td style="padding:4px 8px"><span class="badge g2">vymyšlená</span></td><td style="padding:4px 8px">${g2.length}</td><td style="padding:4px 8px">${ml(g2)}</td><td style="padding:4px 8px">${p5(g2)}</td><td style="padding:4px 8px">${ms(g2)}</td></tr>
+    <tr style="border-top:1px solid var(--line);color:var(--muted)"><td style="padding:4px 8px">teorie (30 hodů)</td><td style="padding:4px 8px">–</td><td style="padding:4px 8px">${nf(THEORY.meanLen)}</td><td style="padding:4px 8px">${nf(THEORY.ge5,0)} %</td><td style="padding:4px 8px">14,5</td></tr>
+   </tbody></table></div>
+  <div class="legend"><span><i class="s1"></i>skutečná mince</span><span><i class="s2"></i>vymyšlená řada</span><span><i class="t"></i>teorie pro férovou minci</span></div>
+  <div class="chartbox">${barChart({labels:RUNCATS,series:[{values:dist(g1),cls:'s1'},{values:dist(g2),cls:'s2'}],theory:THEORY.pct,yFmt:v=>nf(v,0)+' %',xTitle:'délka nejdelší série stejných výsledků',aria:'rozdělení nejdelší série'})}</div>
+  <p class="note">Teorie je simulace 20 000 řad po 30 hodech. Kdo vymýšlí, střídá P a O příliš často, takže má víc změn a kratší série.</p>`;
+}
+
+/* ================= TELEFONY ================= */
+let telData=[];let telLabel='';
+function parseTel(t){const out=[];t.split(/\r?\n/).forEach(line=>{const ms=line.match(/(?:\d[  ]?){5,}/g);if(!ms)return;const d=ms[ms.length-1].replace(/\D/g,'');if(d.length>=5)out.push(d.slice(-5));});return out;}
+const digitTheory=new Array(10).fill(0.1);
+const sum2Theory=Array.from({length:19},(_,s)=>(10-Math.abs(s-9))/100);
+const mean5Theory=(()=>{let d=[1];for(let k=0;k<5;k++){const n=new Array(d.length+9).fill(0);d.forEach((v,i)=>{for(let j=0;j<10;j++)n[i+j]+=v;});d=n;}const tot=1e5;const b=new Array(9).fill(0);d.forEach((v,S)=>{b[Math.min(8,Math.floor(S/5))]+=v/tot;});return b;})();
+function telRender(){
+  const n=telData.length;
+  if(!n){$('#telOut').innerHTML='<div class="empty">Nenašla jsem žádné pětimístné číslo. Jedna odpověď na řádek, např. 45213.</div>';$('#telCount').textContent='';return;}
+  $('#telCount').innerHTML=`${telLabel} <b>${n}</b> čísel.`;
+  const a=telData.map(s=>+s[4]),b=telData.map(s=>+s[3]+ +s[4]),c=telData.map(s=>s.split('').reduce((x,y)=>x+ +y,0)/5);
+  const cnt=(arr,k,f)=>{const r=new Array(k).fill(0);arr.forEach(v=>r[f(v)]++);return r;};
+  const ca=cnt(a,10,v=>v),cb=cnt(b,19,v=>v),cc=cnt(c,9,v=>Math.min(8,Math.floor(v)));
+  const block=(title,sub,counts,labels,th,arr,thM,thS,xt)=>`<div class="panel"><div><h3>${title}</h3><p class="note">${sub}</p></div>
+   <div class="stats"><div class="stat"><span class="v">${nf(mean(arr),2)}</span><span class="k">průměr (teorie ${thM})</span></div><div class="stat"><span class="v">${nf(sd(arr),2)}</span><span class="k">směr. odchylka (teorie ${thS})</span></div></div>
+   <div class="chartbox">${barChart({labels,series:[{values:counts,cls:'s1'}],theory:th.map(p=>p*n),xTitle:xt,aria:title})}</div></div>`;
+  $('#telOut').innerHTML=`<div class="legend"><span><i class="s1"></i>data</span><span><i class="t"></i>očekávaný počet při rovnoměrně náhodných cifrách</span></div>`+
+   block('a) Poslední cifra','Jedna cifra: každá hodnota 0–9 je stejně častá, histogram je plochý.',ca,[...Array(10).keys()].map(String),digitTheory,a,'4,50','2,87','poslední cifra')+
+   block('b) Součet posledních dvou cifer','Součet dvou: uprostřed je nejvíc kombinací, vzniká trojúhelník.',cb,[...Array(19).keys()].map(String),sum2Theory,b,'9,00','4,06','součet')+
+   block('c) Průměr posledních pěti cifer','Průměr pěti: tvar se blíží zvonu a je užší než u jedné cifry (SD ÷ √5).',cc,['0–1','1–2','2–3','3–4','4–5','5–6','6–7','7–8','8–9'],mean5Theory,c,'4,50','1,28','průměr pěti cifer');
+}
+const randTel=()=>String(ri(100000)).padStart(5,'0');
+$('#telLoad').addEventListener('click',()=>{telData=parseTel($('#telInput').value);telLabel='Načteno';telRender();});
+$('#telDemo').addEventListener('click',()=>{const L=[];for(let i=0;i<30;i++)L.push(randTel());$('#telInput').value=L.join('\n');telData=L;telLabel='<span class="badge ex">ukázková třída</span>';telRender();});
+$('#telSim').addEventListener('click',()=>{const L=[];for(let i=0;i<1000;i++)L.push(randTel());telData=L;telLabel='<span class="badge ex">simulace</span>';telRender();});
+
+/* ================= NAROZENINY ================= */
+const pMatch=n=>{let q=1;for(let i=0;i<n;i++)q*=(365-i)/365;return 1-q;};
+const MON=['led','úno','bře','dub','kvě','čvn','čvc','srp','zář','říj','lis','pro'];
+const DIM=[31,29,31,30,31,30,31,31,30,31,30,31];
+let bdClassN=null;
+function bdCurve(){
+  const W=660,H=260,m={l:46,r:14,t:12,b:40},iw=W-m.l-m.r,ih=H-m.t-m.b,N=70;
+  const x=n=>m.l+iw*(n-1)/(N-1),y=p=>m.t+ih*(1-p);
+  let g='';[0,.25,.5,.75,1].forEach(p=>g+=`<line class="grid" x1="${m.l}" x2="${W-m.r}" y1="${y(p)}" y2="${y(p)}"/><text class="tick" x="${m.l-6}" y="${y(p)+4}" text-anchor="end">${p*100} %</text>`);
+  [10,20,30,40,50,60,70].forEach(n=>g+=`<text class="tick" x="${x(n)}" y="${H-m.b+16}" text-anchor="middle">${n}</text>`);
+  let pts='';for(let n=1;n<=N;n++)pts+=`${x(n)},${y(pMatch(n))} `;
+  g+=`<polyline class="curve" points="${pts}"/>`;
+  const cur=+$('#bdN').value;
+  g+=`<line class="mark" x1="${x(cur)}" x2="${x(cur)}" y1="${m.t}" y2="${y(0)}"/><circle class="dot2" cx="${x(cur)}" cy="${y(pMatch(cur))}" r="6"/>`;
+  g+=`<text class="lbl" x="${Math.min(x(cur)+8,W-150)}" y="${Math.max(y(pMatch(cur))-10,24)}">${cur} lidí: ${nf(100*pMatch(cur))} %</text>`;
+  g+=`<text class="lbl" x="${m.l+iw/2}" y="${H-6}" text-anchor="middle">počet lidí v místnosti</text>`;
+  $('#bdCurve').innerHTML=`<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="křivka narozeninového paradoxu">${g}</svg>`;
+}
+function bdUpdate(){const n=+$('#bdN').value;$('#bdNv').textContent=n;$('#bdP').textContent=nf(100*pMatch(n))+' %';bdCurve();}
+$('#bdN').addEventListener('input',bdUpdate);
+function parseBd(t){const out=[];t.split(/\r?\n/).forEach(line=>{const m=line.match(/(\d{1,2})\s*\.\s*(\d{1,2})/)||line.match(/(\d{1,2})\s*\/\s*(\d{1,2})/);if(!m)return;const d=+m[1],mo=+m[2];if(mo>=1&&mo<=12&&d>=1&&d<=DIM[mo-1])out.push([d,mo]);});return out;}
+function bdRender(list,label){
+  if(!list.length){$('#bdOut').innerHTML='<div class="empty">Nenašla jsem žádné datum. Formát: den.měsíc, např. 5.3.</div>';$('#bdCount').textContent='';return;}
+  $('#bdCount').innerHTML=`${label} <b>${list.length}</b> dat.`;
+  $('#bdN').value=Math.min(70,Math.max(2,list.length));bdUpdate();
+  const c={};list.forEach(([d,m])=>{const k=m+'-'+d;c[k]=(c[k]||0)+1;});
+  const dup=Object.entries(c).filter(([,v])=>v>1);
+  let cal='<div></div>';for(let d=1;d<=31;d++)cal+=`<div>${d%5===0||d===1?d:''}</div>`;
+  for(let m=1;m<=12;m++){cal+=`<div style="justify-content:flex-start">${MON[m-1]}</div>`;for(let d=1;d<=31;d++){const v=c[m+'-'+d]||0;cal+=`<div class="c ${d>DIM[m-1]?'x':v>1?'two':v===1?'one':''}">${v>1?v:''}</div>`;}}
+  $('#bdOut').innerHTML=`<div class="stats"><div class="stat"><span class="v">${list.length}</span><span class="k">lidí</span></div><div class="stat"><span class="v">${nf(100*pMatch(list.length))} %</span><span class="k">šance na shodu (teorie)</span></div><div class="stat"><span class="v" style="color:${dup.length?'var(--accent2)':'var(--muted)'}">${dup.length?'ano':'ne'}</span><span class="k">shoda ve třídě</span></div></div>
+   ${dup.length?`<div class="matchlist">${dup.map(([k,v])=>{const [m,d]=k.split('-');return `<span>${d}. ${m}. · ${v}×</span>`;}).join('')}</div>`:'<p class="muted">Tentokrát bez shody. I při 50% šanci to vyjde zhruba v každé druhé třídě.</p>'}
+   <div class="chartbox"><div class="cal">${cal}</div></div>`;
+}
+$('#bdLoad').addEventListener('click',()=>bdRender(parseBd($('#bdInput').value),'Načteno'));
+$('#bdDemo').addEventListener('click',()=>{const L=[];for(let i=0;i<30;i++){const doy=ri(365);const dt=new Date(2025,0,1+doy);L.push(`${dt.getDate()}.${dt.getMonth()+1}.`);}$('#bdInput').value=L.join('\n');bdRender(parseBd(L.join('\n')),'<span class="badge ex">ukázková třída</span>');});
+
+/* ================= BAYES ================= */
+const TOT=10000;let byGuesses=null;
+function byState(){const f=+$('#byPrev').value,se=+$('#bySens').value/100,fp=+$('#byFp').value/100;const tp=f*se,fn=f-tp,h=TOT-f,fa=h*fp,tn=h-fa;return {f,se,fp,tp,fn,h,fa,tn,post:(tp+fa)>0?tp/(tp+fa):0};}
+const fmtN=x=>Math.abs(x-Math.round(x))<1e-9?Math.round(x).toLocaleString('cs-CZ'):nf(x,1);
+function byRender(){
+  const s=byState();
+  $('#byPrevV').textContent=`${s.f} (${nf(100*s.f/TOT,s.f<100?2:1)} %)`;$('#bySensV').textContent=`${Math.round(s.se*100)} %`;$('#byFpV').textContent=`${nf(s.fp*100)} %`;
+  $('#byRes').textContent=nf(100*s.post)+' %';
+  $('#byTree').innerHTML=`<div class="node root"><div class="n">${TOT.toLocaleString('cs-CZ')}</div>transakcí</div>
+   <div class="node"><div class="n" style="color:var(--accent)">${fmtN(s.f)}</div>podvodných<div class="sub"><span>poplach <b>${fmtN(s.tp)}</b></span><span>bez poplachu <b>${fmtN(s.fn)}</b></span></div></div>
+   <div class="node"><div class="n" style="color:var(--accent2)">${fmtN(s.h)}</div>poctivých<div class="sub"><span>poplach <b>${fmtN(s.fa)}</b></span><span>bez poplachu <b>${fmtN(s.tn)}</b></span></div></div>
+   <div class="node root">Poplachů celkem <b class="mono">${fmtN(s.tp+s.fa)}</b>, z toho skutečných podvodů <b class="mono">${fmtN(s.tp)}</b> → <b class="mono">${fmtN(s.tp)} / ${fmtN(s.tp+s.fa)} = ${nf(100*s.post)} %</b></div>`;
+  const total=s.tp+s.fa;const k=total>600?Math.ceil(total/600):1;
+  const nt=Math.round(s.tp/k),nfa=Math.round(s.fa/k);
+  $('#byScale').textContent=k>1?`1 čtvereček = ${k} poplachů`:'1 čtvereček = 1 poplach';
+  $('#byWaffle').innerHTML='<i class="t"></i>'.repeat(nt)+'<i></i>'.repeat(nfa);
+  if(byGuesses)byGuessRender();
+}
+['#byPrev','#bySens','#byFp'].forEach(id=>$(id).addEventListener('input',byRender));
+function parseNums(t){const out=[];t.split(/\r?\n/).forEach(line=>{const ms=line.replace(/(\d),(\d)/g,'$1.$2').match(/\d+(?:\.\d+)?/g);if(!ms)return;let v=parseFloat(ms[ms.length-1]);if(v<=1&&/\./.test(ms[ms.length-1]))v*=100;if(v>=0&&v<=100)out.push(v);});return out;}
+function stripPlot(rows,opts={}){
+  // rows: [{name, vals}] on 0-100
+  const W=660,rowH=56,m={l:opts.left||130,r:16,t:10,b:34},H=m.t+m.b+rowH*rows.length,iw=W-m.l-m.r;
+  const x=v=>m.l+iw*v/100;let g='';
+  for(let v=0;v<=100;v+=10)g+=`<line class="grid" x1="${x(v)}" x2="${x(v)}" y1="${m.t}" y2="${H-m.b}"/><text class="tick" x="${x(v)}" y="${H-m.b+16}" text-anchor="middle">${v}</text>`;
+  rows.forEach((r,i)=>{const cy=m.t+rowH*i+rowH/2;
+    if(r.vals.length){const q1=quant(r.vals,.25),q3=quant(r.vals,.75),md=quant(r.vals,.5);
+      g+=`<rect class="band" x="${x(q1)}" y="${cy-16}" width="${Math.max(2,x(q3)-x(q1))}" height="32" rx="4"/>`;
+      const bins={};r.vals.forEach(v=>{const b=Math.round(v/2);const n=bins[b]=(bins[b]||0)+1;const off=((n%2?1:-1)*Math.floor(n/2))*6;g+=`<circle class="dot" cx="${x(v)}" cy="${cy+Math.max(-20,Math.min(20,off))}" r="4.5"/>`;});
+      g+=`<line class="med" x1="${x(md)}" x2="${x(md)}" y1="${cy-19}" y2="${cy+19}"/>`;}
+    g+=`<text class="lbl" x="${m.l-10}" y="${cy+5}" text-anchor="end">${esc(r.name)}</text>`;});
+  if(opts.mark!=null)g+=`<line class="mark" x1="${x(opts.mark)}" x2="${x(opts.mark)}" y1="${m.t}" y2="${H-m.b}"/><text class="lbl" x="${Math.min(x(opts.mark)+6,W-120)}" y="${m.t+12}">${esc(opts.markLabel||'')}</text>`;
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(opts.aria||'bodový graf')}">${g}</svg>`;
+}
+function byGuessRender(){
+  const s=byState(),v=byGuesses,box=$('#byGuessOut');box.hidden=false;
+  if(!v.length){box.innerHTML='<div class="empty">Nenašla jsem žádná čísla 0–100.</div>';return;}
+  const close=v.filter(x=>Math.abs(x-100*s.post)<=5).length;
+  box.innerHTML=`<h3>Tipy třídy</h3><div class="stats"><div class="stat"><span class="v">${v.length}</span><span class="k">tipů</span></div><div class="stat"><span class="v">${nf(quant(v,.5),0)} %</span><span class="k">medián tipů</span></div><div class="stat"><span class="v">${nf(100*s.post)} %</span><span class="k">správně</span></div><div class="stat"><span class="v">${close}</span><span class="k">tipů do ±5 b.</span></div></div>
+  <div class="chartbox">${stripPlot([{name:'tipy',vals:v}],{left:60,mark:100*s.post,markLabel:'správná odpověď',aria:'tipy studentů'})}</div>`;
+}
+$('#byLoad').addEventListener('click',()=>{byGuesses=parseNums($('#byInput').value);byGuessRender();});
+$('#byDemo').addEventListener('click',()=>{const L=[];for(let i=0;i<28;i++){const r=rnd();L.push(Math.round(r<.5?88+rnd()*11:r<.7?40+rnd()*40:r<.85?1+rnd()*20:99));}$('#byInput').value=L.join('\n');byGuesses=L;byGuessRender();$('#byGuessOut h3').insertAdjacentHTML('beforeend',' <span class="badge ex">ukázkové</span>');});
+
+/* ================= SLOVA ================= */
+const WORDS=['téměř jistě','pravděpodobně','možná','nepravděpodobně'];
+function wRender(demo){
+  const rows=WORDS.map((w,i)=>({name:w,vals:parseNums($('#w'+i).value)}));
+  if(!rows.some(r=>r.vals.length)){$('#wOut').innerHTML='<div class="empty">Nenašla jsem žádná čísla 0–100.</div>';return;}
+  $('#wOut').innerHTML=`<h3>Co si třída pod slovy představuje ${demo?'<span class="badge ex">ukázková data</span>':''}</h3>
+   <div class="legend"><span><i class="s1"></i>jednotlivé odpovědi</span><span>pruh = prostřední polovina odpovědí (IQR), čára = medián</span></div>
+   <div class="chartbox">${stripPlot(rows,{aria:'odhady pravděpodobnosti pro slovní výrazy'})}</div>
+   <div class="chartbox"><table class="mono" style="border-collapse:collapse;width:100%;min-width:420px;font-size:.92rem"><thead><tr style="text-align:left;color:var(--muted)"><th style="padding:4px 8px">výraz</th><th style="padding:4px 8px">n</th><th style="padding:4px 8px">medián</th><th style="padding:4px 8px">min–max</th></tr></thead><tbody>
+   ${rows.map(r=>`<tr style="border-top:1px solid var(--line)"><td style="padding:4px 8px;font-family:var(--f-body)">${esc(r.name)}</td><td style="padding:4px 8px">${r.vals.length}</td><td style="padding:4px 8px">${r.vals.length?nf(quant(r.vals,.5),0)+' %':'–'}</td><td style="padding:4px 8px">${r.vals.length?nf(Math.min(...r.vals),0)+'–'+nf(Math.max(...r.vals),0)+' %':'–'}</td></tr>`).join('')}
+   </tbody></table></div>
+   <p class="note">Kde se pruhy překrývají, dva lidé stejným slovem myslí jiné číslo. Proto analytik píše „70 %“, ne „pravděpodobně“.</p>`;
+}
+$('#wLoad').addEventListener('click',()=>wRender(false));
+$('#wDemo').addEventListener('click',()=>{const c=[[93,8],[70,14],[45,17],[22,12]];c.forEach(([mu,s],i)=>{const L=[];for(let k=0;k<28;k++){let v=mu+s*(rnd()+rnd()+rnd()-1.5)*1.4;L.push(Math.round(Math.max(0,Math.min(100,v))));}$('#w'+i).value=L.join('\n');});wRender(true);});
+
+/* ================= OTÁZKY ================= */
+const DIST=['Binomické','Hypergeometrické','Poissonovo','Normální'];
+const QS=[
+ {h:'Sběr dat pro aplikaci',items:[
+  {t:'Volný text',q:'Vložte kód, který vám ukázal telefon (začíná #1 nebo #2).',a:'Během sběru odpovědi nepromítejte, kódy prozrazují skupinu. Pak je zkopírujte do záložky Mince.'},
+  {t:'Volný text',q:'Napište posledních 5 číslic svého telefonního čísla.',a:'Celé číslo nesbírejte. Odpovědi vložte do záložky Telefonní čísla.'},
+  {t:'Volný text',q:'Napište den a měsíc svých narozenin ve tvaru 5.3. (bez roku).',a:'Odpovědi vložte do záložky Narozeniny.'},
+  {t:'Volný text (číslo)',q:'Z 10 000 transakcí je 10 podvodných. Systém odhalí 99 % podvodů a u 1 % poctivých transakcí spustí falešný poplach. Systém právě spustil poplach. Jaká je pravděpodobnost (v %), že jde opravdu o podvod? Nepočítejte, tipněte.',a:'Správně <b>≈ 9 %</b> (9,9 skutečných ze 109,8 poplachů). Typické tipy jsou kolem 90–99 %.'},
+  {t:'Volný text (číslo)',q:'Analytik napíše: „Firma téměř jistě splní plán.“ Jakou pravděpodobnost (0–100 %) tím podle vás myslí?',a:'Stejnou otázku položte i pro „pravděpodobně“, „možná“ a „nepravděpodobně“ (čtyři otázky). Vložte do záložky „Pravděpodobně“.'},
+ ]},
+ {h:'Tipy před ukázkou',items:[
+  {t:'Výběr z možností',q:'Kolik lidí musí být v místnosti, aby byla aspoň 50% šance, že dva mají narozeniny ve stejný den?',o:['12','23','57','183'],a:'Správně <b>23</b>. Většina tipuje 183 (polovina roku). Při 57 lidech je šance už 99 %.'},
+  {t:'Výběr z možností',q:'Vezmeme posledních 5 číslic telefonu a spočítáme jejich průměr. Jaký tvar bude mít histogram průměrů celé třídy?',o:['Rovný (všechny hodnoty stejně časté)','Trojúhelník','Zvon (uprostřed nejvíc)','Dvě špičky'],a:'Správně <b>zvon</b>. Jednotlivá cifra je rovnoměrná, průměr pěti se blíží normálnímu rozdělení (centrální limitní věta).'},
+ ]},
+ {h:'Které rozdělení? (možnosti u všech: '+DIST.join(' / ')+')',items:[
+  {t:'Výběr z možností',q:'Na pobočku banky přijde v průměru 6 klientů za hodinu. Jaká je pravděpodobnost, že jich přijde právě 10?',o:DIST,a:'<b>Poissonovo</b> (počet událostí za čas, λ = 6).'},
+  {t:'Výběr z možností',q:'Z 200 faktur je 15 chybných. Auditor náhodně vybere 10 faktur ke kontrole. Jaká je pravděpodobnost, že najde aspoň jednu chybnou?',o:DIST,a:'<b>Hypergeometrické</b> (výběr bez vracení, N = 200, N<sub>A</sub> = 15, n = 10).'},
+  {t:'Výběr z možností',q:'Obchodník provede 20 hovorů, každý vede k prodeji s pravděpodobností 10 %. Jaká je pravděpodobnost, že prodá aspoň 3×?',o:DIST,a:'<b>Binomické</b> (n = 20 nezávislých pokusů, π = 0,1).'},
+  {t:'Výběr z možností',q:'Jaká je pravděpodobnost, že náhodně vybraný zaměstnanec měří víc než 190 cm?',o:DIST,a:'<b>Normální</b> (spojitá veličina ovlivněná mnoha vlivy).'},
+  {t:'Výběr z možností',q:'E-shop dostane v průměru 2 reklamace denně. Jaká je pravděpodobnost, že dnes nepřijde žádná?',o:DIST,a:'<b>Poissonovo</b> (λ = 2).'},
+  {t:'Výběr z možností',q:'Do užšího výběru se losuje 5 z 30 uchazečů, mezi nimiž je 12 žen. Jaká je pravděpodobnost, že vyberou právě 2 ženy?',o:DIST,a:'<b>Hypergeometrické</b> (bez vracení, N = 30, N<sub>A</sub> = 12, n = 5).'},
+  {t:'Výběr z možností',q:'Banka má 50 klientů, každý nezávisle nesplácí s pravděpodobností 3 %. Jaká je pravděpodobnost, že nesplácí víc než 2?',o:DIST,a:'<b>Binomické</b> (n = 50, π = 0,03).'},
+  {t:'Výběr z možností',q:'Balíčky kávy mají deklarovanou hmotnost 250 g, stroj plní s malou náhodnou odchylkou. Jaká je pravděpodobnost, že balíček váží méně než 245 g?',o:DIST,a:'<b>Normální</b>.'},
+ ]},
+ {h:'Hlasování bez sběru dat',items:[
+  {t:'Výběr z možností',q:'Co je pravděpodobnější?',o:['A) Firma X příští rok zbankrotuje.','B) Firma X příští rok zbankrotuje kvůli účetnímu podvodu.'],a:'Správně <b>A</b>. B je průnik dvou jevů, takže P(A ∩ B) ≤ P(A). Příběh s podvodem působí věrohodněji, ale nemůže být pravděpodobnější (Kahneman & Tversky, „Linda problem“).'},
+  {t:'Výběr z možností',q:'Co si vyberete?',o:['A) Jistě dostanete 500 Kč.','B) Hodí se mincí: 50% šance na 1 000 Kč, jinak nic.'],a:'Střední hodnota je u obou <b>500 Kč</b>. Většina obvykle volí jistotu (A).'},
+  {t:'Výběr z možností',q:'Co si vyberete?',o:['A) Jistě zaplatíte 500 Kč.','B) Hodí se mincí: 50% šance, že zaplatíte 1 000 Kč, jinak nic.'],a:'Střední hodnota je u obou <b>−500 Kč</b>. U ztráty většina obvykle volí sázku (B). Stejná čísla, jiné rozhodnutí: na tom stojí pojištění.'},
+  {t:'Výběr z možností',q:'Co je větší?',o:['P(jí pizzu | je student)','P(je student | jí pizzu)'],a:'Větší je <b>P(jí pizzu | je student)</b>: většina studentů pizzu jí, ale většina lidí, kteří jedí pizzu, nejsou studenti.'},
+  {t:'Výběr z možností',q:'Co je větší?',o:['P(nesplácí | je v insolvenci)','P(je v insolvenci | nesplácí)'],a:'Větší je <b>P(nesplácí | je v insolvenci)</b>: kdo je v insolvenci, téměř vždy nesplácí, ale jen část neplatičů skončí v insolvenci.'},
+  {t:'Výběr z možností',q:'Co je větší?',o:['P(poplach | podvod)','P(podvod | poplach)'],a:'Větší je <b>P(poplach | podvod)</b> = 99 %, zatímco P(podvod | poplach) ≈ 9 %. Dobrý most k záložce Podvodné transakce.'},
+ ]},
+];
+$('#qList').innerHTML=QS.map((grp,gi)=>`<div class="qgroup"><h3>${esc(grp.h)}</h3>${grp.items.map((it,ii)=>`<div class="q"><div style="display:flex;flex-direction:column;gap:4px;min-width:0"><span class="type">${esc(it.t)}</span><div class="text" id="qt-${gi}-${ii}">${esc(it.q)}${it.o?`<ul>${it.o.map(o=>`<li>${esc(o)}</li>`).join('')}</ul>`:''}</div></div><button class="btn ghost small copy" data-g="${gi}" data-i="${ii}">Kopírovat</button><div class="ans">${it.a}</div></div>`).join('')}</div>`).join('');
+$('#qList').addEventListener('click',e=>{const b=e.target.closest('button.copy');if(!b)return;const it=QS[+b.dataset.g].items[+b.dataset.i];copyText(it.q+(it.o?'\n'+it.o.join('\n'):''),b,$(`#qt-${b.dataset.g}-${b.dataset.i}`));});
+
+/* ---------- init ---------- */
+bdUpdate();byRender();
+function route(){const h=(location.hash||'').slice(1);
+if(h==='student'){document.body.classList.add('student-mode');show('student');}
+else{document.body.classList.remove('student-mode');show(VIEWS.includes(h)?h:'mince');}}
+route();window.addEventListener('hashchange',route);
+})();
+</script>
+
+</body></html>

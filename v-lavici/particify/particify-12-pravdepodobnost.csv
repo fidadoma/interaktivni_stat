@@ -1,0 +1,29 @@
+"format","body","additionalText","options","correctOptions","multiple","abstentionsAllowed"
+"TEXT","Vložte kód, který vám ukázal telefon (začíná #1 nebo #2).","","","","false","true"
+"CHOICE","Kolik lidí musí být v místnosti, aby byla aspoň 50% šance, že dva z nich mají narozeniny ve stejný den?","Stačí 23 lidí. Při 57 lidech je šance už 99 %.","12
+23
+57
+183","23","false","false"
+"TEXT","Napište den a měsíc svých narozenin ve tvaru 5.3. (bez roku).","","","","false","true"
+"CHOICE","Co je pravděpodobnější?","Druhá možnost je průnik dvou jevů, takže nemůže být pravděpodobnější než první: P(A ∩ B) ≤ P(A).","Firma X příští rok zbankrotuje.
+Firma X příští rok zbankrotuje kvůli účetnímu podvodu.","Firma X příští rok zbankrotuje.","false","false"
+"CHOICE","Co je větší?","Většina studentů pizzu jí, ale většina lidí, kteří jedí pizzu, nejsou studenti.","P(jí pizzu | je student)
+P(je student | jí pizzu)","P(jí pizzu | je student)","false","false"
+"CHOICE","Co je větší?","Kdo je v insolvenci, téměř vždy nesplácí, ale jen část neplatičů skončí v insolvenci.","P(nesplácí | je v insolvenci)
+P(je v insolvenci | nesplácí)","P(nesplácí | je v insolvenci)","false","false"
+"TEXT","Z 10 000 transakcí je 10 podvodných. Systém odhalí 99 % podvodů a u 1 % poctivých transakcí spustí falešný poplach. Systém právě spustil poplach. Jaká je pravděpodobnost (v %), že jde opravdu o podvod? Nepočítejte, tipněte a napište jen číslo.","","","","false","true"
+"CHOICE","Co je větší?","P(poplach | podvod) = 99 %, ale P(podvod | poplach) je jen asi 9 %.","P(poplach | podvod)
+P(podvod | poplach)","P(poplach | podvod)","false","false"
+"TEXT","Analytik napíše: „Firma téměř jistě splní plán.“ Jakou pravděpodobnost (0–100 %) tím podle vás myslí? Napište jen číslo.","","","","false","true"
+"TEXT","Analytik napíše: „Firma pravděpodobně splní plán.“ Jakou pravděpodobnost (0–100 %) tím podle vás myslí? Napište jen číslo.","","","","false","true"
+"TEXT","Analytik napíše: „Firma možná splní plán.“ Jakou pravděpodobnost (0–100 %) tím podle vás myslí? Napište jen číslo.","","","","false","true"
+"TEXT","Analytik napíše: „Firma nepravděpodobně splní plán.“ Jakou pravděpodobnost (0–100 %) tím podle vás myslí? Napište jen číslo.","","","","false","true"
+"CHOICE","Co si vyberete?","Střední hodnota je u obou možností 500 Kč.","Jistě dostanete 500 Kč.
+Hodí se mincí: 50% šance na 1 000 Kč, jinak nic.","","false","false"
+"CHOICE","Co si vyberete?","Střední hodnota je u obou možností −500 Kč.","Jistě zaplatíte 500 Kč.
+Hodí se mincí: 50% šance, že zaplatíte 1 000 Kč, jinak nic.","","false","false"
+"CHOICE","Vezmeme posledních 5 číslic vašeho telefonu a spočítáme jejich průměr. Jaký tvar bude mít histogram průměrů celé třídy?","Jedna cifra je rozdělená rovnoměrně, průměr pěti cifer se blíží normálnímu rozdělení (centrální limitní věta).","Rovný (všechny hodnoty stejně časté)
+Trojúhelník
+Zvon (uprostřed nejvíc)
+Dvě špičky","Zvon (uprostřed nejvíc)","false","false"
+"TEXT","Napište posledních 5 číslic svého telefonního čísla.","","","","false","true"

@@ -1,0 +1,33 @@
+"format","body","additionalText","options","correctOptions","multiple","abstentionsAllowed"
+"CHOICE","Na pobočku banky přijde v průměru 6 klientů za hodinu. Jaká je pravděpodobnost, že jich přijde právě 10? Které rozdělení použijete?","Počet událostí za čas, λ = 6.","Binomické
+Hypergeometrické
+Poissonovo
+Normální","Poissonovo","false","false"
+"CHOICE","Z 200 faktur je 15 chybných. Auditor náhodně vybere 10 faktur ke kontrole. Jaká je pravděpodobnost, že najde aspoň jednu chybnou? Které rozdělení použijete?","Výběr bez vracení: N = 200, N_A = 15, n = 10.","Binomické
+Hypergeometrické
+Poissonovo
+Normální","Hypergeometrické","false","false"
+"CHOICE","Obchodník provede 20 hovorů, každý vede k prodeji s pravděpodobností 10 %. Jaká je pravděpodobnost, že prodá aspoň 3×? Které rozdělení použijete?","20 nezávislých pokusů, π = 0,1.","Binomické
+Hypergeometrické
+Poissonovo
+Normální","Binomické","false","false"
+"CHOICE","Jaká je pravděpodobnost, že náhodně vybraný zaměstnanec měří víc než 190 cm? Které rozdělení použijete?","Spojitá veličina ovlivněná mnoha vlivy.","Binomické
+Hypergeometrické
+Poissonovo
+Normální","Normální","false","false"
+"CHOICE","E-shop dostane v průměru 2 reklamace denně. Jaká je pravděpodobnost, že dnes nepřijde žádná? Které rozdělení použijete?","Počet událostí za čas, λ = 2.","Binomické
+Hypergeometrické
+Poissonovo
+Normální","Poissonovo","false","false"
+"CHOICE","Do užšího výběru se losuje 5 z 30 uchazečů, mezi nimiž je 12 žen. Jaká je pravděpodobnost, že vyberou právě 2 ženy? Které rozdělení použijete?","Výběr bez vracení: N = 30, N_A = 12, n = 5.","Binomické
+Hypergeometrické
+Poissonovo
+Normální","Hypergeometrické","false","false"
+"CHOICE","Banka má 50 klientů, každý nezávisle nesplácí s pravděpodobností 3 %. Jaká je pravděpodobnost, že nesplácí víc než 2? Které rozdělení použijete?","n = 50, π = 0,03.","Binomické
+Hypergeometrické
+Poissonovo
+Normální","Binomické","false","false"
+"CHOICE","Balíčky kávy mají deklarovanou hmotnost 250 g, stroj plní s malou náhodnou odchylkou. Jaká je pravděpodobnost, že balíček váží méně než 245 g? Které rozdělení použijete?","Spojitá veličina, náhodné odchylky kolem cílové hodnoty.","Binomické
+Hypergeometrické
+Poissonovo
+Normální","Normální","false","false"
